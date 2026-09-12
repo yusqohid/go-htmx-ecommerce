@@ -42,11 +42,11 @@
         <!-- Custom Slug (Optional) -->
         <div class="mb-3">
           <label for="slug" class="form-label-custom">URL Slug <span class="text-muted fw-normal">(Optional)</span></label>
-          <div class="input-group">
-            <span class="input-group-text bg-light text-muted border-end-0">/products/</span>
+          <div class="input-group-custom">
+            <span class="input-group-text-custom">/products/</span>
             <input 
               type="text" 
-              class="form-control-custom border-start-0" 
+              class="form-control-custom" 
               id="slug" 
               name="slug" 
               value="{{ .Product.Slug }}" 
@@ -60,11 +60,11 @@
         <div class="row mb-3">
           <div class="col-md-6">
             <label for="price" class="form-label-custom">Price (IDR) <span class="text-danger">*</span></label>
-            <div class="input-group">
-              <span class="input-group-text bg-light border-end-0">Rp</span>
+            <div class="input-group-custom">
+              <span class="input-group-text-custom">Rp</span>
               <input 
                 type="number" 
-                class="form-control-custom border-start-0" 
+                class="form-control-custom" 
                 id="price" 
                 name="price" 
                 value="{{ .Product.Price }}" 

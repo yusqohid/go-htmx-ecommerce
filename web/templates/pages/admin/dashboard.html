@@ -1,0 +1,159 @@
+{{ define "content" }}
+<!-- START: Dashboard Header Banner -->
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Store Overview</h1>
+    <p class="page-subtitle">Welcome to Sellora Admin. Monitor your digital catalog and store status.</p>
+  </div>
+  <a href="/admin/products/new" class="btn-custom btn-custom-primary text-decoration-none">
+    <i class="bi bi-plus-lg me-1"></i> Add Product
+  </a>
+</div>
+<!-- END: Dashboard Header Banner -->
+
+<!-- START: Stat Cards Row -->
+<div class="row g-4 mb-4">
+  <!-- Card 1: Total Products -->
+  <div class="col-md-3 col-sm-6">
+    <div class="card card-stat">
+      <div class="card-header pb-0">
+        <span class="stat-label">Total Products</span>
+        <i class="bi bi-box-seam fs-5 text-muted"></i>
+      </div>
+      <div class="stat-value">{{ .TotalProducts }}</div>
+      <div class="trend-badge trend-up">
+        <i class="bi bi-arrow-up-right"></i>
+        <span>Catalog items</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 2: Published Live -->
+  <div class="col-md-3 col-sm-6">
+    <div class="card card-stat">
+      <div class="card-header pb-0">
+        <span class="stat-label">Live on Store</span>
+        <i class="bi bi-check-circle fs-5 text-success"></i>
+      </div>
+      <div class="stat-value text-success">{{ .PublishedProducts }}</div>
+      <div class="trend-badge trend-up">
+        <i class="bi bi-globe"></i>
+        <span>Visible to buyers</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 3: Draft Products -->
+  <div class="col-md-3 col-sm-6">
+    <div class="card card-stat">
+      <div class="card-header pb-0">
+        <span class="stat-label">Draft Catalog</span>
+        <i class="bi bi-pencil-square fs-5 text-warning"></i>
+      </div>
+      <div class="stat-value text-warning">{{ .DraftProducts }}</div>
+      <div class="trend-badge trend-down">
+        <i class="bi bi-eye-slash"></i>
+        <span>Hidden from store</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 4: Payment Provider -->
+  <div class="col-md-3 col-sm-6">
+    <div class="card card-stat">
+      <div class="card-header pb-0">
+        <span class="stat-label">Payment Gateway</span>
+        <i class="bi bi-credit-card fs-5 text-primary"></i>
+      </div>
+      <div class="stat-value text-uppercase fs-4 mt-2">{{ .PaymentProvider }}</div>
+      <div class="trend-badge trend-up">
+        <i class="bi bi-shield-check"></i>
+        <span>Provider-agnostic</span>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- END: Stat Cards Row -->
+
+<!-- START: Recent Products Table (Spark Admin Component) -->
+<div class="table-card-custom">
+  <div class="table-header-control">
+    <h5 class="fw-bold text-dark mb-0">Recent Products</h5>
+    <div class="table-filter-group">
+      <a href="/admin/products" class="btn-table-action text-decoration-none">
+        <span>View Full Catalog</span>
+        <i class="bi bi-arrow-right ms-1"></i>
+      </a>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table-custom">
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th>URL Slug</th>
+          <th>Price</th>
+          <th>Files</th>
+          <th>Status</th>
+          <th class="text-center">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{ if .RecentProducts }}
+          {{ range .RecentProducts }}
+          <tr>
+            <td>
+              <div class="table-user-cell">
+                {{ if .ThumbnailURL }}
+                <img src="{{ .ThumbnailURL }}" alt="{{ .Name }}" class="table-user-avatar rounded" style="object-fit: cover;">
+                {{ else }}
+                <div class="table-user-avatar d-flex align-items-center justify-content-center bg-light text-muted">
+                  <i class="bi bi-box-seam fs-5"></i>
+                </div>
+                {{ end }}
+                <div>
+                  <div class="table-user-name">{{ .Name }}</div>
+                  <div class="table-user-sub">{{ .ShortDescription }}</div>
+                </div>
+              </div>
+            </td>
+            <td class="font-monospace text-muted small">/products/{{ .Slug }}</td>
+            <td class="table-amount">{{ formatMoney .Price }}</td>
+            <td>
+              <span class="badge {{ if .Files }}bg-success-subtle text-success{{ else }}bg-light text-muted border{{ end }} rounded-pill px-2.5 py-1">
+                {{ len .Files }} files
+              </span>
+            </td>
+            <td>
+              {{ if eq .Status "published" }}
+              <span class="badge-table success">Published</span>
+              {{ else }}
+              <span class="badge-table pending">Draft</span>
+              {{ end }}
+            </td>
+            <td>
+              <div class="d-flex justify-content-center gap-1">
+                <a href="/admin/products/{{ .ID }}/files" class="table-btn-action" title="Manage Files">
+                  <i class="bi bi-folder2-open"></i>
+                </a>
+                <a href="/admin/products/{{ .ID }}/edit" class="table-btn-action" title="Edit">
+                  <i class="bi bi-pencil"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {{ end }}
+        {{ else }}
+          <tr>
+            <td colspan="6" class="text-center py-5 text-muted">
+              No products found. <a href="/admin/products/new">Add your first product</a>.
+            </td>
+          </tr>
+        {{ end }}
+      </tbody>
+    </table>
+  </div>
+</div>
+<!-- END: Recent Products Table -->
+{{ end }}

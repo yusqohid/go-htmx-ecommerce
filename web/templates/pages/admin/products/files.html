@@ -1,0 +1,108 @@
+{{ define "content" }}
+<!-- START: Page Header Banner -->
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Digital Files Management</h1>
+    <p class="page-subtitle">Manage downloadable assets attached to <strong>{{ .Product.Name }}</strong>.</p>
+  </div>
+  <a href="/admin/products" class="btn-custom btn-custom-secondary btn-custom-sm text-decoration-none">
+    <i class="bi bi-arrow-left me-1"></i> Back to Products
+  </a>
+</div>
+<!-- END: Page Header Banner -->
+
+{{ if .Error }}
+<div class="alert-custom alert-custom-danger mb-4">
+  <i class="bi bi-exclamation-triangle-fill alert-custom-icon"></i>
+  <div class="alert-custom-content">{{ .Error }}</div>
+</div>
+{{ end }}
+
+<div class="row g-4 mb-4">
+  <!-- Upload New File Card -->
+  <div class="col-12 col-lg-5">
+    <div class="card border-light shadow-sm p-4 h-100">
+      <h5 class="card-title mb-2"><i class="bi bi-cloud-arrow-up text-success me-2"></i> Upload New File</h5>
+      <p class="text-muted small mb-4">Files are stored securely outside public web roots and are served only to verified buyers with paid orders.</p>
+
+      <form method="POST" action="/admin/products/{{ .Product.ID }}/files" enctype="multipart/form-data">
+        <div class="mb-3">
+          <label for="file" class="form-label-custom">Select Digital File <span class="text-danger">*</span></label>
+          <input type="file" class="form-control-custom" id="file" name="file" required>
+          <small class="text-muted d-block mt-1">Maximum file size: 150MB (.zip, .pdf, .tar.gz, .dmg, etc.)</small>
+        </div>
+
+        <div class="mb-4">
+          <label for="version" class="form-label-custom">Version Tag</label>
+          <input type="text" class="form-control-custom" id="version" name="version" value="1.0.0" placeholder="e.g. 1.0.0 or v2-release">
+        </div>
+
+        <button type="submit" class="btn-custom btn-custom-primary w-100 justify-content-center">
+          <i class="bi bi-upload me-2"></i> Upload Digital Asset
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Attached Files List -->
+  <div class="col-12 col-lg-7">
+    <div class="table-card-custom h-100">
+      <div class="table-header-control">
+        <h6 class="fw-bold text-dark mb-0">Attached Files ({{ len .Product.Files }})</h6>
+      </div>
+      <div class="table-responsive">
+        <table class="table-custom">
+          <thead>
+            <tr>
+              <th>File Name</th>
+              <th>Size</th>
+              <th>Version</th>
+              <th>Checksum (SHA-256)</th>
+              <th class="text-center">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{ if .Product.Files }}
+              {{ range .Product.Files }}
+              <tr>
+                <td>
+                  <div class="table-product-name">
+                    <i class="bi bi-file-earmark-zip me-1 text-primary"></i> {{ .OriginalName }}
+                  </div>
+                  <small class="text-muted">{{ .MIMEType }}</small>
+                </td>
+                <td>
+                  <span class="badge bg-light text-dark border">{{ .FileSize }} B</span>
+                </td>
+                <td>
+                  <span class="badge bg-secondary-subtle text-secondary border">{{ .Version }}</span>
+                </td>
+                <td>
+                  <code class="small text-muted" title="{{ .Checksum }}">{{ if gt (len .Checksum) 12 }}{{ slice .Checksum 0 12 }}...{{ else }}{{ .Checksum }}{{ end }}</code>
+                </td>
+                <td>
+                  <div class="d-flex justify-content-center">
+                    <form method="POST" action="/admin/products/{{ $.Product.ID }}/files/{{ .ID }}/delete" onsubmit="return confirm('Delete this file permanently?');">
+                      <button type="submit" class="table-btn-action delete border-0 bg-transparent" title="Delete File">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+              {{ end }}
+            {{ else }}
+              <tr>
+                <td colspan="5" class="text-center py-5 text-muted">
+                  <i class="bi bi-folder2-open fs-2 d-block mb-2 text-secondary"></i>
+                  No digital files attached to this product yet.
+                </td>
+              </tr>
+            {{ end }}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{{ end }}

@@ -15,6 +15,8 @@ import (
 	"github.com/yusqohid/go-htmx-ecommerce/internal/config"
 	"github.com/yusqohid/go-htmx-ecommerce/internal/database"
 	appHTTP "github.com/yusqohid/go-htmx-ecommerce/internal/http"
+	"github.com/yusqohid/go-htmx-ecommerce/internal/product"
+	"github.com/yusqohid/go-htmx-ecommerce/internal/storage"
 	"github.com/yusqohid/go-htmx-ecommerce/internal/view"
 	"github.com/yusqohid/go-htmx-ecommerce/web/templates"
 )
@@ -40,21 +42,37 @@ func main() {
 	// 3. Initialize view template renderer
 	viewRenderer := view.New(templates.FS, cfg.IsProduction())
 
-	// 4. Initialize services and handlers
+	// 4. Initialize storage manager
+	storageManager, err := storage.New(cfg.StoragePath)
+	if err != nil {
+		log.Fatalf("Failed to initialize file storage: %v", err)
+	}
+
+	// 5. Initialize services and handlers
 	var authService *auth.Service
+	var productService *product.Service
+	var productRepo *product.PostgresProductRepository
+	var productHandler *product.Handler
+
 	if db != nil {
 		userRepo := auth.NewUserRepository(db.DB)
 		sessionRepo := auth.NewSessionRepository(db.DB)
 		authService = auth.NewService(userRepo, sessionRepo)
+
+		productRepo = product.NewProductRepository(db.DB)
+		fileRepo := product.NewProductFileRepository(db.DB)
+		productService = product.NewService(productRepo, fileRepo, storageManager)
+		productHandler = product.NewHandler(productService, productRepo, viewRenderer, cfg.PaymentProvider)
 	}
 	authHandler := auth.NewHandler(authService, viewRenderer, cfg.IsProduction())
 
-	// 5. Initialize router
+	// 6. Initialize router
 	router := appHTTP.NewRouter(appHTTP.RouterDeps{
-		Config:      cfg,
-		DB:          db,
-		AuthService: authService,
-		AuthHandler: authHandler,
+		Config:         cfg,
+		DB:             db,
+		AuthService:    authService,
+		AuthHandler:    authHandler,
+		ProductHandler: productHandler,
 	})
 
 	srv := &http.Server{

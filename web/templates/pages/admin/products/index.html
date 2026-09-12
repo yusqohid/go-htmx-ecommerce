@@ -1,0 +1,143 @@
+{{ define "content" }}
+<!-- START: Page Header Banner -->
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Digital Products</h1>
+    <p class="page-subtitle">Manage your catalog, prices, and attached digital download files.</p>
+  </div>
+  <a href="/admin/products/new" class="btn-custom btn-custom-primary text-decoration-none">
+    <i class="bi bi-plus-lg me-1"></i> Add Product
+  </a>
+</div>
+<!-- END: Page Header Banner -->
+
+<!-- START: Table Card Container (Spark Admin Component) -->
+<div class="table-card-custom">
+  <!-- Header Controls -->
+  <div class="table-header-control">
+    <!-- Search Bar UI -->
+    <form method="GET" action="/admin/products" class="table-search-box">
+      <i class="bi bi-search table-search-icon"></i>
+      <input type="text" name="q" value="{{ .Search }}" class="table-search-input" placeholder="Search products by name or slug...">
+      {{ if ne .StatusFilter "all" }}<input type="hidden" name="status" value="{{ .StatusFilter }}">{{ end }}
+    </form>
+
+    <!-- Action buttons / Filter options -->
+    <div class="table-filter-group">
+      <div class="dropdown">
+        <button class="btn-table-action dropdown-toggle" type="button" id="dropdownFilterStatus" data-bs-toggle="dropdown" aria-expanded="false">
+          <i class="bi bi-funnel"></i> Status: <span class="text-capitalize">{{ .StatusFilter }}</span>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownFilterStatus">
+          <li><a class="dropdown-item" href="/admin/products?q={{ .Search }}&status=all">All Statuses</a></li>
+          <li><a class="dropdown-item" href="/admin/products?q={{ .Search }}&status=published">Published Live</a></li>
+          <li><a class="dropdown-item" href="/admin/products?q={{ .Search }}&status=draft">Drafts Only</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Responsive Table Wrapper -->
+  <div class="table-responsive">
+    <table class="table-custom">
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th>URL Slug</th>
+          <th>Price</th>
+          <th>Digital Files</th>
+          <th>Status</th>
+          <th class="text-center">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{ if .Products }}
+          {{ range .Products }}
+          <tr>
+            <td>
+              <div class="table-user-cell">
+                {{ if .ThumbnailURL }}
+                <img src="{{ .ThumbnailURL }}" alt="{{ .Name }}" class="table-user-avatar rounded" style="object-fit: cover;">
+                {{ else }}
+                <div class="table-user-avatar d-flex align-items-center justify-content-center bg-light text-muted">
+                  <i class="bi bi-box-seam fs-5"></i>
+                </div>
+                {{ end }}
+                <div>
+                  <div class="table-user-name">{{ .Name }}</div>
+                  <div class="table-user-sub">{{ .ShortDescription }}</div>
+                </div>
+              </div>
+            </td>
+            <td class="font-monospace text-muted small">/products/{{ .Slug }}</td>
+            <td class="table-amount">{{ formatMoney .Price }}</td>
+            <td>
+              <a href="/admin/products/{{ .ID }}/files" class="text-decoration-none">
+                <span class="badge {{ if .Files }}bg-success-subtle text-success{{ else }}bg-light text-muted border{{ end }} rounded-pill px-2.5 py-1">
+                  <i class="bi bi-paperclip me-1"></i>{{ len .Files }} files
+                </span>
+              </a>
+            </td>
+            <td>
+              <div id="status-badge-{{ .ID }}">
+                {{ if eq .Status "published" }}
+                <span 
+                  class="badge-table success"
+                  style="cursor: pointer;"
+                  hx-post="/admin/products/{{ .ID }}/toggle-status"
+                  hx-target="#status-badge-{{ .ID }}"
+                  hx-swap="outerHTML"
+                  title="Click to set Draft"
+                >
+                  Published
+                </span>
+                {{ else }}
+                <span 
+                  class="badge-table pending"
+                  style="cursor: pointer;"
+                  hx-post="/admin/products/{{ .ID }}/toggle-status"
+                  hx-target="#status-badge-{{ .ID }}"
+                  hx-swap="outerHTML"
+                  title="Click to Publish"
+                >
+                  Draft
+                </span>
+                {{ end }}
+              </div>
+            </td>
+            <td>
+              <div class="d-flex justify-content-center gap-1">
+                <a href="/admin/products/{{ .ID }}/files" class="table-btn-action" title="Manage Files">
+                  <i class="bi bi-folder2-open"></i>
+                </a>
+                <a href="/admin/products/{{ .ID }}/edit" class="table-btn-action" title="Edit Product">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                <form method="POST" action="/admin/products/{{ .ID }}/delete" onsubmit="return confirm('Delete this product permanently?');" style="display:inline;">
+                  <button type="submit" class="table-btn-action delete border-0 bg-transparent" title="Delete Product">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {{ end }}
+        {{ else }}
+          <tr>
+            <td colspan="6" class="text-center py-5 text-muted">
+              <i class="bi bi-box-seam fs-1 d-block mb-2 text-secondary"></i>
+              No products found. <a href="/admin/products/new">Add your first product</a>.
+            </td>
+          </tr>
+        {{ end }}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Footer Controls / Pagination Info -->
+  <div class="table-footer-control">
+    <span class="table-pagination-info">Showing {{ len .Products }} of {{ .Total }} products</span>
+  </div>
+</div>
+<!-- END: Table Card Container -->
+{{ end }}

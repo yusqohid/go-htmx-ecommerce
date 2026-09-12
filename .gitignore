@@ -5,5 +5,5 @@ PRD.md
 *~
 bin/
 tmp/
-storage/
+/storage/
 spark-admin-1.0.0/

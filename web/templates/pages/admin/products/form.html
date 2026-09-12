@@ -1,0 +1,150 @@
+{{ define "content" }}
+<!-- START: Page Header Banner -->
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ if .IsEdit }}Edit Product{{ else }}Add New Product{{ end }}</h1>
+    <p class="page-subtitle">Fill in the product specifications for your digital good.</p>
+  </div>
+  <a href="/admin/products" class="btn-custom btn-custom-secondary btn-custom-sm text-decoration-none">
+    <i class="bi bi-arrow-left me-1"></i> Back to Products
+  </a>
+</div>
+<!-- END: Page Header Banner -->
+
+{{ if .Error }}
+<div class="alert-custom alert-custom-danger mb-4">
+  <i class="bi bi-exclamation-triangle-fill alert-custom-icon"></i>
+  <div class="alert-custom-content">{{ .Error }}</div>
+</div>
+{{ end }}
+
+<div class="row g-4 mb-4">
+  <div class="col-12 col-lg-8">
+    <div class="card border-light shadow-sm p-4 h-100">
+      <h5 class="card-title mb-4">Product Details</h5>
+
+      <form method="POST" action="{{ if .IsEdit }}/admin/products/{{ .Product.ID }}{{ else }}/admin/products{{ end }}">
+        <!-- Product Name -->
+        <div class="mb-3">
+          <label for="name" class="form-label-custom">Product Title <span class="text-danger">*</span></label>
+          <input 
+            type="text" 
+            class="form-control-custom" 
+            id="name" 
+            name="name" 
+            value="{{ .Product.Name }}" 
+            required 
+            placeholder="e.g. Go Microservices Architecture Kit"
+          >
+          <small class="text-muted d-block mt-1">A clear, descriptive title for your digital asset.</small>
+        </div>
+
+        <!-- Custom Slug (Optional) -->
+        <div class="mb-3">
+          <label for="slug" class="form-label-custom">URL Slug <span class="text-muted fw-normal">(Optional)</span></label>
+          <div class="input-group-custom">
+            <span class="input-group-text-custom">/products/</span>
+            <input 
+              type="text" 
+              class="form-control-custom" 
+              id="slug" 
+              name="slug" 
+              value="{{ .Product.Slug }}" 
+              placeholder="auto-generated-from-title"
+            >
+          </div>
+          <small class="text-muted d-block mt-1">Leave empty to automatically generate a search-friendly slug.</small>
+        </div>
+
+        <!-- Price & Status -->
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label for="price" class="form-label-custom">Price (IDR) <span class="text-danger">*</span></label>
+            <div class="input-group-custom">
+              <span class="input-group-text-custom">Rp</span>
+              <input 
+                type="number" 
+                class="form-control-custom" 
+                id="price" 
+                name="price" 
+                value="{{ .Product.Price }}" 
+                min="0" 
+                step="1000" 
+                required 
+                placeholder="150000"
+              >
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label for="status" class="form-label-custom">Publication Status</label>
+            <select id="status" name="status" class="form-select-custom">
+              <option value="draft" {{ if eq .Product.Status "draft" }}selected{{ end }}>Draft (Hidden from storefront)</option>
+              <option value="published" {{ if eq .Product.Status "published" }}selected{{ end }}>Published Live (Available for purchase)</option>
+              <option value="archived" {{ if eq .Product.Status "archived" }}selected{{ end }}>Archived</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Thumbnail URL -->
+        <div class="mb-3">
+          <label for="thumbnail_url" class="form-label-custom">Thumbnail Cover Image URL</label>
+          <input 
+            type="url" 
+            class="form-control-custom" 
+            id="thumbnail_url" 
+            name="thumbnail_url" 
+            value="{{ .Product.ThumbnailURL }}" 
+            placeholder="https://images.unsplash.com/..."
+          >
+          <small class="text-muted d-block mt-1">Direct URL to an image preview (JPG, PNG, WebP).</small>
+        </div>
+
+        <!-- Short Description -->
+        <div class="mb-3">
+          <label for="short_description" class="form-label-custom">Short Summary</label>
+          <input 
+            type="text" 
+            class="form-control-custom" 
+            id="short_description" 
+            name="short_description" 
+            value="{{ .Product.ShortDescription }}" 
+            placeholder="A complete, production-ready Go project boilerplate..."
+          >
+        </div>
+
+        <!-- Full Description -->
+        <div class="mb-4">
+          <label for="full_description" class="form-label-custom">Full Product Description</label>
+          <textarea 
+            class="form-control-custom" 
+            id="full_description" 
+            name="full_description" 
+            rows="6" 
+            placeholder="Detailed features, requirements, installation guide, and notes..."
+          >{{ .Product.FullDescription }}</textarea>
+        </div>
+
+        <!-- Action buttons -->
+        <div class="d-flex align-items-center gap-3">
+          <button type="submit" class="btn-custom btn-custom-primary">
+            <i class="bi bi-check-lg me-1"></i> {{ if .IsEdit }}Save Changes{{ else }}Create Product{{ end }}
+          </button>
+          <a href="/admin/products" class="btn-custom btn-custom-light text-decoration-none">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Side Help Card -->
+  <div class="col-12 col-lg-4">
+    <div class="card border-light shadow-sm p-4 h-100">
+      <h5 class="card-title mb-3"><i class="bi bi-info-circle text-success me-2"></i> Store Guidelines</h5>
+      <ul class="text-muted small ps-3 mb-0" style="line-height: 1.8;">
+        <li><strong>File Attachments:</strong> You can upload software binaries, source code zip, or PDFs immediately after creating the product record.</li>
+        <li><strong>Price Format:</strong> Enter the full Rupiah integer (e.g. <code>250000</code> for Rp 250.000).</li>
+        <li><strong>Draft Status:</strong> Set to <em>Draft</em> while polishing descriptions. Only <em>Published</em> products appear on the storefront.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+{{ end }}

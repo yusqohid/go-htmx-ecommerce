@@ -220,12 +220,12 @@ func (h *Handler) ToggleStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Render HTMX fragment button
+	// Render HTMX fragment button using Spark Admin badge-table class
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if prod.Status == domain.StatusPublished {
-		fmt.Fprintf(w, `<button class="btn btn-sm btn-success-subtle text-success border border-success-subtle rounded-pill px-3" id="status-badge-%d" hx-post="/admin/products/%d/toggle-status" hx-target="#status-badge-%d" hx-swap="outerHTML" title="Click to set Draft"><i class="bi bi-check2-circle me-1"></i> Published</button>`, prod.ID, prod.ID, prod.ID)
+		fmt.Fprintf(w, `<div id="status-badge-%d"><span class="badge-table success" style="cursor: pointer;" hx-post="/admin/products/%d/toggle-status" hx-target="#status-badge-%d" hx-swap="outerHTML" title="Click to set Draft">Published</span></div>`, prod.ID, prod.ID, prod.ID)
 	} else {
-		fmt.Fprintf(w, `<button class="btn btn-sm btn-warning-subtle text-warning border border-warning-subtle rounded-pill px-3" id="status-badge-%d" hx-post="/admin/products/%d/toggle-status" hx-target="#status-badge-%d" hx-swap="outerHTML" title="Click to Publish"><i class="bi bi-pencil me-1"></i> Draft</button>`, prod.ID, prod.ID, prod.ID)
+		fmt.Fprintf(w, `<div id="status-badge-%d"><span class="badge-table pending" style="cursor: pointer;" hx-post="/admin/products/%d/toggle-status" hx-target="#status-badge-%d" hx-swap="outerHTML" title="Click to Publish">Draft</span></div>`, prod.ID, prod.ID, prod.ID)
 	}
 }
 

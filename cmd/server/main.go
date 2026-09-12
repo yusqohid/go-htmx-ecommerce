@@ -42,14 +42,12 @@ func main() {
 
 	// 4. Initialize services and handlers
 	var authService *auth.Service
-	var authHandler *auth.Handler
-
 	if db != nil {
 		userRepo := auth.NewUserRepository(db.DB)
 		sessionRepo := auth.NewSessionRepository(db.DB)
 		authService = auth.NewService(userRepo, sessionRepo)
-		authHandler = auth.NewHandler(authService, viewRenderer, cfg.IsProduction())
 	}
+	authHandler := auth.NewHandler(authService, viewRenderer, cfg.IsProduction())
 
 	// 5. Initialize router
 	router := appHTTP.NewRouter(appHTTP.RouterDeps{

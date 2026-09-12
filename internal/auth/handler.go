@@ -47,6 +47,17 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	password := r.FormValue("password")
 	redirect := r.FormValue("redirect")
 
+	if h.authService == nil {
+		w.WriteHeader(http.StatusServiceUnavailable)
+		_ = h.view.Render(w, "auth", "auth/login", map[string]any{
+			"Title":    "Sign In",
+			"Redirect": redirect,
+			"Email":    email,
+			"Error":    "Database connection is not configured or unavailable. Please check DATABASE_URL in .env",
+		})
+		return
+	}
+
 	user, session, err := h.authService.Login(r.Context(), email, password)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
@@ -113,6 +124,11 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 
 	if password != confirm {
 		renderError("Passwords do not match", http.StatusBadRequest)
+		return
+	}
+
+	if h.authService == nil {
+		renderError("Database connection is not configured or unavailable. Please check DATABASE_URL in .env", http.StatusServiceUnavailable)
 		return
 	}
 

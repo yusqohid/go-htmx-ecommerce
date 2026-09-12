@@ -37,13 +37,13 @@ func NewRouter(deps RouterDeps) http.Handler {
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Timeout(60 * time.Second))
 
-	// Serve static assets (CSS, JS, Fonts, Images from Spark Admin)
-	r.Handle("/static/*", static.Handler())
-
-	// Attach user session to request context if present
+	// Attach user session to request context if present (must be before any routes)
 	if deps.AuthService != nil {
 		r.Use(auth.Authenticate(deps.AuthService))
 	}
+
+	// Serve static assets (CSS, JS, Fonts, Images from Spark Admin)
+	r.Handle("/static/*", static.Handler())
 
 	// Health check endpoint
 	r.Get("/healthz", func(w http.ResponseWriter, r *http.Request) {

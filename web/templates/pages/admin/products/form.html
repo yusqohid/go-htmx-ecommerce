@@ -1,0 +1,145 @@
+{{ define "content" }}
+<div class="page-header mb-4">
+  <div>
+    <h1 class="page-title">{{ if .IsEdit }}Edit Product{{ else }}Add New Product{{ end }}</h1>
+    <p class="page-subtitle">Fill in the details for your digital product.</p>
+  </div>
+  <a href="/admin/products" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left me-1"></i> Back to Products
+  </a>
+</div>
+
+{{ if .Error }}
+<div class="alert alert-danger alert-dismissible fade show rounded-3" role="alert">
+  <i class="bi bi-exclamation-triangle-fill me-2"></i> {{ .Error }}
+</div>
+{{ end }}
+
+<div class="row">
+  <div class="col-lg-8">
+    <div class="card border-0 shadow-sm rounded-3 p-4">
+      <form method="POST" action="{{ if .IsEdit }}/admin/products/{{ .Product.ID }}{{ else }}/admin/products{{ end }}">
+        
+        <!-- Product Name -->
+        <div class="mb-3">
+          <label for="name" class="form-label fw-semibold">Product Name <span class="text-danger">*</span></label>
+          <input 
+            type="text" 
+            id="name" 
+            name="name" 
+            value="{{ .Product.Name }}" 
+            required 
+            placeholder="e.g. Go Microservices Architecture Kit"
+            class="form-control"
+          >
+          <div class="form-text">A clear, descriptive title for your digital good.</div>
+        </div>
+
+        <!-- Custom Slug (Optional) -->
+        <div class="mb-3">
+          <label for="slug" class="form-label fw-semibold">URL Slug <span class="text-muted fw-normal">(Optional)</span></label>
+          <div class="input-group">
+            <span class="input-group-text bg-light text-muted">/products/</span>
+            <input 
+              type="text" 
+              id="slug" 
+              name="slug" 
+              value="{{ .Product.Slug }}" 
+              placeholder="auto-generated-from-name"
+              class="form-control"
+            >
+          </div>
+          <div class="form-text">Leave blank to automatically generate from the product name.</div>
+        </div>
+
+        <!-- Price & Status -->
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label for="price" class="form-label fw-semibold">Price (IDR) <span class="text-danger">*</span></label>
+            <div class="input-group">
+              <span class="input-group-text bg-light">Rp</span>
+              <input 
+                type="number" 
+                id="price" 
+                name="price" 
+                value="{{ .Product.Price }}" 
+                min="0" 
+                step="1000" 
+                required 
+                placeholder="150000"
+                class="form-control"
+              >
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label for="status" class="form-label fw-semibold">Publishing Status</label>
+            <select id="status" name="status" class="form-select">
+              <option value="draft" {{ if eq .Product.Status "draft" }}selected{{ end }}>Draft (Hidden from storefront)</option>
+              <option value="published" {{ if eq .Product.Status "published" }}selected{{ end }}>Published (Visible to customers)</option>
+              <option value="archived" {{ if eq .Product.Status "archived" }}selected{{ end }}>Archived</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Thumbnail URL -->
+        <div class="mb-3">
+          <label for="thumbnail_url" class="form-label fw-semibold">Thumbnail Image URL</label>
+          <input 
+            type="url" 
+            id="thumbnail_url" 
+            name="thumbnail_url" 
+            value="{{ .Product.ThumbnailURL }}" 
+            placeholder="https://images.unsplash.com/..."
+            class="form-control"
+          >
+          <div class="form-text">URL to product cover image / graphic preview.</div>
+        </div>
+
+        <!-- Short Description -->
+        <div class="mb-3">
+          <label for="short_description" class="form-label fw-semibold">Short Summary</label>
+          <input 
+            type="text" 
+            id="short_description" 
+            name="short_description" 
+            value="{{ .Product.ShortDescription }}" 
+            placeholder="A complete, production-ready Go project template..."
+            class="form-control"
+          >
+          <div class="form-text">Displayed on storefront listing cards and SEO snippets.</div>
+        </div>
+
+        <!-- Full Description -->
+        <div class="mb-4">
+          <label for="full_description" class="form-label fw-semibold">Full Product Description</label>
+          <textarea 
+            id="full_description" 
+            name="full_description" 
+            rows="6" 
+            class="form-control"
+            placeholder="Detailed features, requirements, installation notes, etc..."
+          >{{ .Product.FullDescription }}</textarea>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+          <button type="submit" class="btn btn-success px-4">
+            <i class="bi bi-check-lg me-1"></i> {{ if .IsEdit }}Save Changes{{ else }}Create Product{{ end }}
+          </button>
+          <a href="/admin/products" class="btn btn-light">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm rounded-3 p-3 bg-light">
+      <h6 class="fw-bold mb-3"><i class="bi bi-info-circle me-1"></i> Digital Product Tips</h6>
+      <ul class="small text-muted ps-3 mb-0">
+        <li class="mb-2"><strong>Files:</strong> You can upload download files right after creating the product record.</li>
+        <li class="mb-2"><strong>Price:</strong> Enter price in IDR integer (e.g. <code>250000</code> for Rp 250.000).</li>
+        <li><strong>Draft status:</strong> Safe to save as draft while preparing files and preview descriptions.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+{{ end }}

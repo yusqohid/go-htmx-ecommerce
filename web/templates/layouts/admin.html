@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ .Title }} - Sellora Admin</title>
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="/static/admin/images/favicon.ico">
+
+  <!-- Spark Admin CSS Assets -->
+  <link rel="stylesheet" href="/static/admin/libs/bootstrap/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/static/admin/libs/bootstrap-icons/bootstrap-icons.css">
+  <link rel="stylesheet" href="/static/admin/css/main.css">
+
+  <!-- HTMX for reactive server-rendered interactions -->
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+</head>
+<body>
+
+  <!-- START: Sidebar Component -->
+  <div class="sidebar-wrapper" id="sidebar">
+    <!-- Brand Logo -->
+    <a href="/admin" class="sidebar-brand text-decoration-none">
+      <i class="bi bi-bag-check-fill text-success"></i>
+      <span>Sellora</span>
+    </a>
+
+    <!-- Navigation Menu -->
+    <div class="flex-grow-1 overflow-y-auto">
+      <div class="sidebar-menu-section">
+        <div class="sidebar-menu-title">Management</div>
+        <ul class="sidebar-menu-list">
+          <li class="sidebar-menu-item">
+            <a href="/admin" class="sidebar-menu-link {{ if eq .ActiveNav "dashboard" }}active{{ end }}">
+              <i class="bi bi-grid-fill"></i>
+              <span>Dashboard</span>
+            </a>
+          </li>
+          <li class="sidebar-menu-item">
+            <a href="/admin/products" class="sidebar-menu-link {{ if eq .ActiveNav "products" }}active{{ end }}">
+              <i class="bi bi-box-seam-fill"></i>
+              <span>Products</span>
+            </a>
+          </li>
+          <li class="sidebar-menu-item">
+            <a href="/admin/orders" class="sidebar-menu-link {{ if eq .ActiveNav "orders" }}active{{ end }}">
+              <i class="bi bi-receipt"></i>
+              <span>Orders</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <div class="sidebar-menu-section">
+        <div class="sidebar-menu-title">Quick Links</div>
+        <ul class="sidebar-menu-list">
+          <li class="sidebar-menu-item">
+            <a href="/" target="_blank" class="sidebar-menu-link">
+              <i class="bi bi-shop"></i>
+              <span>View Storefront</span>
+              <i class="bi bi-box-arrow-up-right ms-auto font-size-xs"></i>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Sidebar Profile Card -->
+    <div class="sidebar-profile">
+      <img src="/static/admin/images/avatar.png" alt="Admin Avatar" class="sidebar-profile-img">
+      <div class="sidebar-profile-info">
+        <div class="sidebar-profile-name">{{ if .User }}{{ .User.Name }}{{ else }}Administrator{{ end }}</div>
+        <div class="sidebar-profile-email">{{ if .User }}{{ .User.Email }}{{ else }}admin@sellora.local{{ end }}</div>
+      </div>
+    </div>
+  </div>
+  <!-- END: Sidebar Component -->
+
+  <!-- START: Main Content Area -->
+  <div class="main-wrapper">
+    <!-- Top Navbar -->
+    <header class="navbar-custom">
+      <div class="navbar-left">
+        <button class="btn-desktop-toggle d-none d-xl-flex align-items-center justify-content-center me-3"
+          id="desktop-sidebar-toggle" aria-label="Minimize Sidebar">
+          <i class="bi bi-chevron-bar-left"></i>
+        </button>
+        <button class="sidebar-toggle-btn me-2" id="sidebar-toggle" aria-label="Toggle Navigation">
+          <i class="bi bi-list"></i>
+        </button>
+
+        <a href="/admin/products/new" class="btn btn-sm btn-success rounded-pill px-3 d-flex align-items-center gap-1">
+          <i class="bi bi-plus-lg"></i>
+          <span>Add Product</span>
+        </a>
+      </div>
+
+      <!-- Right actions -->
+      <div class="navbar-actions">
+        <div class="dropdown ms-2">
+          <button class="navbar-profile-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" id="profile-dropdown">
+            <img src="/static/admin/images/avatar.png" alt="Profile" class="navbar-profile-img">
+            <span class="navbar-profile-name d-none d-md-inline">{{ if .User }}{{ .User.Name }}{{ else }}Admin{{ end }}</span>
+            <i class="bi bi-chevron-down navbar-profile-caret"></i>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end dropdown-menu-profile shadow-sm" aria-labelledby="profile-dropdown">
+            <li class="dropdown-header">Store Administrator</li>
+            <li><a class="dropdown-item" href="/"><i class="bi bi-shop me-2"></i> Storefront</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+              <form method="POST" action="/logout">
+                <button type="submit" class="dropdown-item text-danger border-0 bg-transparent w-100 text-start">
+                  <i class="bi bi-box-arrow-right me-2"></i> Logout
+                </button>
+              </form>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </header>
+
+    <!-- Content Slot -->
+    <main class="p-4">
+      {{ template "content" . }}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer-custom mt-auto">
+      <div class="footer-left">
+        <span class="footer-logo"><i class="bi bi-bag-check-fill text-success"></i> Sellora</span>
+        <span class="footer-separator">|</span>
+        <span class="footer-copy">&copy; 2026 Sellora Digital Commerce. Styled with Spark Admin.</span>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Bootstrap 5 Bundle JS -->
+  <script src="/static/admin/libs/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <script src="/static/admin/js/dashboard.js"></script>
+</body>
+</html>

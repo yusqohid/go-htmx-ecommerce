@@ -2,5 +2,8 @@
 .env
 AGENTS.md
 PRD.md
-README.md
 *~
+bin/
+tmp/
+storage/
+spark-admin-1.0.0/

@@ -11,9 +11,12 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/yusqohid/go-htmx-ecommerce/internal/auth"
 	"github.com/yusqohid/go-htmx-ecommerce/internal/config"
 	"github.com/yusqohid/go-htmx-ecommerce/internal/database"
 	appHTTP "github.com/yusqohid/go-htmx-ecommerce/internal/http"
+	"github.com/yusqohid/go-htmx-ecommerce/internal/view"
+	"github.com/yusqohid/go-htmx-ecommerce/web/templates"
 )
 
 func main() {
@@ -34,8 +37,27 @@ func main() {
 		log.Println("Database connection established.")
 	}
 
-	// 3. Initialize router and HTTP server
-	router := appHTTP.NewRouter(cfg, db)
+	// 3. Initialize view template renderer
+	viewRenderer := view.New(templates.FS, cfg.IsProduction())
+
+	// 4. Initialize services and handlers
+	var authService *auth.Service
+	var authHandler *auth.Handler
+
+	if db != nil {
+		userRepo := auth.NewUserRepository(db.DB)
+		sessionRepo := auth.NewSessionRepository(db.DB)
+		authService = auth.NewService(userRepo, sessionRepo)
+		authHandler = auth.NewHandler(authService, viewRenderer, cfg.IsProduction())
+	}
+
+	// 5. Initialize router
+	router := appHTTP.NewRouter(appHTTP.RouterDeps{
+		Config:      cfg,
+		DB:          db,
+		AuthService: authService,
+		AuthHandler: authHandler,
+	})
 
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%s", cfg.AppPort),
@@ -45,7 +67,7 @@ func main() {
 		IdleTimeout:  60 * time.Second,
 	}
 
-	// 4. Start HTTP server in a separate goroutine
+	// 6. Start HTTP server in a separate goroutine
 	go func() {
 		log.Printf("Server listening on port %s (URL: %s)", cfg.AppPort, cfg.AppBaseURL)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
@@ -53,7 +75,7 @@ func main() {
 		}
 	}()
 
-	// 5. Graceful shutdown listening to interrupt signals
+	// 7. Graceful shutdown listening to interrupt signals
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit

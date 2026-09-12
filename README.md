@@ -41,7 +41,19 @@ Apply all SQL migrations:
 go run cmd/migrate/main.go
 ```
 
-### 4. Run the Application Server
+### 4. Seed Default Administrator Account
+
+Create the initial store admin user:
+
+```bash
+go run cmd/seed/main.go
+```
+
+Default credentials:
+- **Email:** `admin@sellora.local`
+- **Password:** `AdminPassword123!`
+
+### 5. Run the Application Server
 
 Start the web server:
 

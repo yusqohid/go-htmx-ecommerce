@@ -16,7 +16,10 @@ func TestHealthcheckEndpoint(t *testing.T) {
 		AppPort: "8080",
 	}
 
-	router := appHTTP.NewRouter(cfg, nil)
+	router := appHTTP.NewRouter(appHTTP.RouterDeps{
+		Config: cfg,
+		DB:     nil,
+	})
 
 	req, err := http.NewRequest(http.MethodGet, "/healthz", nil)
 	if err != nil {

@@ -23,7 +23,8 @@ type RouterDeps struct {
 	DB             *database.DB
 	AuthService    *auth.Service
 	AuthHandler    *auth.Handler
-	ProductHandler *product.Handler
+	ProductHandler    *product.Handler
+	StorefrontHandler *product.StorefrontHandler
 }
 
 // NewRouter sets up the Chi HTTP router with base middlewares, static files, auth, and routes.
@@ -82,32 +83,12 @@ func NewRouter(deps RouterDeps) http.Handler {
 		r.Get("/logout", deps.AuthHandler.Logout)
 	}
 
-	// Placeholder Homepage (Fase 4 will provide full storefront)
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		user := auth.UserFromContext(r.Context())
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		if user != nil {
-			adminLink := ""
-			if user.IsAdmin() {
-				adminLink = `<p><a href="/admin" style="font-weight:bold;color:#16a34a;">Go to Admin Dashboard &rarr;</a></p>`
-			}
-			_, _ = fmt.Fprintf(w, `
-				<!DOCTYPE html><html><body style="font-family:sans-serif;padding:2rem;">
-				<h2>Welcome back, %s (%s)!</h2>
-				<p>Role: <strong>%s</strong></p>
-				%s
-				<p><a href="/logout">Logout</a></p>
-				</body></html>
-			`, user.Name, user.Email, user.Role, adminLink)
-			return
-		}
-		_, _ = fmt.Fprintf(w, `
-			<!DOCTYPE html><html><body style="font-family:sans-serif;padding:2rem;">
-			<h2>Welcome to Sellora</h2>
-			<p><a href="/login">Sign In</a> | <a href="/register">Register</a></p>
-			</body></html>
-		`)
-	})
+	// Public Storefront routes
+	if deps.StorefrontHandler != nil {
+		r.Get("/", deps.StorefrontHandler.Home)
+		r.Get("/products", deps.StorefrontHandler.Catalog)
+		r.Get("/products/{slug}", deps.StorefrontHandler.ProductDetail)
+	}
 
 	// Protected Admin Dashboard & Product Management
 	if deps.ProductHandler != nil {

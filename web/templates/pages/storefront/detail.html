@@ -1,0 +1,160 @@
+{{ define "meta" }}
+<meta name="description" content="{{ .Product.ShortDescription }}">
+<meta property="og:title" content="{{ .Product.Name }} - Sellora">
+<meta property="og:description" content="{{ .Product.ShortDescription }}">
+<meta property="og:type" content="product">
+<meta property="og:price:amount" content="{{ .Product.Price }}">
+<meta property="og:price:currency" content="IDR">
+<meta property="og:url" content="/products/{{ .Product.Slug }}">
+{{ if .Product.ThumbnailURL }}
+<meta property="og:image" content="{{ .Product.ThumbnailURL }}">
+{{ end }}
+{{ end }}
+
+{{ define "content" }}
+<div class="container py-4 py-lg-5">
+  <!-- Breadcrumb Navigation -->
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb mb-0 small">
+      <li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted">Home</a></li>
+      <li class="breadcrumb-item"><a href="/products" class="text-decoration-none text-muted">Catalog</a></li>
+      <li class="breadcrumb-item active text-dark fw-medium" aria-current="page">{{ .Product.Name }}</li>
+    </ol>
+  </nav>
+
+  <div class="row g-4 g-lg-5">
+    <!-- Left Column: Product Information & Specifications -->
+    <div class="col-12 col-lg-8">
+      <!-- Media Banner / Thumbnail -->
+      <div class="detail-preview-banner shadow-sm">
+        {{ if .Product.ThumbnailURL }}
+          <img src="{{ .Product.ThumbnailURL }}" alt="{{ .Product.Name }}">
+        {{ else }}
+          <i class="bi bi-box-seam thumb-icon"></i>
+        {{ end }}
+      </div>
+
+      <!-- Title & Short Description -->
+      <h1 class="fw-bold mb-2">{{ .Product.Name }}</h1>
+      <p class="lead text-muted mb-4">{{ .Product.ShortDescription }}</p>
+
+      <div class="d-flex flex-wrap gap-4 text-muted small pb-4 mb-4 border-bottom">
+        <div>
+          <i class="bi bi-calendar3 me-1 text-success"></i>
+          Released: <strong>{{ formatDateShort .Product.CreatedAt }}</strong>
+        </div>
+        <div>
+          <i class="bi bi-file-earmark-zip me-1 text-success"></i>
+          Files: <strong>{{ .TotalFiles }} attached</strong>
+        </div>
+        {{ if gt .TotalSize 0 }}
+        <div>
+          <i class="bi bi-hdd-network me-1 text-success"></i>
+          Total Size: <strong>{{ formatBytes .TotalSize }}</strong>
+        </div>
+        {{ end }}
+      </div>
+
+      <!-- Full Description -->
+      <div class="mb-5">
+        <h4 class="fw-bold mb-3">Product Overview</h4>
+        <div class="text-muted lh-lg">
+          {{ if .Product.FullDescription }}
+            {{ nl2br .Product.FullDescription }}
+          {{ else }}
+            <p>No extended description provided for this product.</p>
+          {{ end }}
+        </div>
+      </div>
+
+      <!-- Digital Files Specifications Card -->
+      <div class="card border-light shadow-sm p-4 rounded-4 mb-4">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h5 class="fw-bold mb-0">
+            <i class="bi bi-folder-check text-success me-2"></i> Included Digital Assets
+          </h5>
+          <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+            {{ .TotalFiles }} {{ if eq .TotalFiles 1 }}File{{ else }}Files{{ end }}
+          </span>
+        </div>
+        <p class="text-muted small mb-3">
+          The following files are packaged with this purchase and will be unlocked for direct download immediately upon payment.
+        </p>
+
+        {{ if .Files }}
+          <div class="d-flex flex-column gap-2">
+            {{ range .Files }}
+              <div class="detail-file-item">
+                <div class="d-flex align-items-center gap-3">
+                  <i class="bi bi-file-earmark-zip text-success fs-4"></i>
+                  <div>
+                    <div class="fw-semibold text-dark">{{ .OriginalName }}</div>
+                    <div class="text-muted small d-flex gap-2 align-items-center">
+                      <span>{{ formatBytes .FileSize }}</span>
+                      <span>&bull;</span>
+                      <span>{{ .MIMEType }}</span>
+                      {{ if .Checksum }}
+                        <span>&bull;</span>
+                        <span class="font-monospace" title="SHA-256: {{ .Checksum }}">
+                          SHA-256: {{ printf "%.10s..." .Checksum }}
+                        </span>
+                      {{ end }}
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <span class="badge-version">v{{ .Version }}</span>
+                </div>
+              </div>
+            {{ end }}
+          </div>
+        {{ else }}
+          <div class="p-3 bg-light rounded text-muted small text-center">
+            Files are being prepared for release. Check back shortly.
+          </div>
+        {{ end }}
+      </div>
+    </div>
+
+    <!-- Right Column: Sticky Purchase Box -->
+    <div class="col-12 col-lg-4">
+      <div class="purchase-sticky-card">
+        <div class="text-muted small fw-medium mb-1">Single-Vendor License</div>
+        <div class="d-flex align-items-baseline gap-2 mb-3">
+          <span class="fs-1 fw-bold text-dark">{{ formatMoney .Product.Price }}</span>
+        </div>
+
+        <div class="alert bg-success-subtle text-success border-0 py-2 px-3 small rounded-3 mb-4 d-flex align-items-center gap-2">
+          <i class="bi bi-lightning-charge-fill"></i>
+          <span>Instant Download after checkout</span>
+        </div>
+
+        <!-- Checkout Action (Links to Phase 5 Order Checkout) -->
+        <a href="/checkout/{{ .Product.ID }}" class="btn btn-success btn-lg w-100 rounded-pill py-3 fw-bold shadow-sm mb-3">
+          Buy Now &bull; {{ formatMoney .Product.Price }}
+        </a>
+
+        <div class="d-flex flex-column gap-2 py-3 border-top border-bottom mb-4 text-muted small">
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-check-circle-fill text-success"></i>
+            <span>Lifetime access &amp; download history</span>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-check-circle-fill text-success"></i>
+            <span>Verified cryptographic file integrity</span>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-check-circle-fill text-success"></i>
+            <span>Customer support directly from creator</span>
+          </div>
+        </div>
+
+        <div class="text-center text-muted small">
+          <i class="bi bi-lock-fill me-1 text-secondary"></i>
+          <span>Secure checkout &amp; fast fulfillment</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{{ end }}

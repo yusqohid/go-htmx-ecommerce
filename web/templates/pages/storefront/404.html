@@ -1,0 +1,23 @@
+{{ define "content" }}
+<div class="container py-5 my-5 text-center">
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-6">
+      <div class="mb-4">
+        <i class="bi bi-question-circle text-muted" style="font-size: 4.5rem;"></i>
+      </div>
+      <h1 class="fw-bold mb-3">Product Not Found</h1>
+      <p class="text-muted mb-4 lead">
+        The digital product you are looking for does not exist, has been drafted, or the link may be broken.
+      </p>
+      <div class="d-flex justify-content-center gap-3">
+        <a href="/products" class="btn btn-success rounded-pill px-4 fw-medium">
+          <i class="bi bi-grid me-1"></i> Browse Catalog
+        </a>
+        <a href="/" class="btn btn-outline-secondary rounded-pill px-4">
+          Back to Home
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{{ end }}

@@ -257,6 +257,34 @@ func (s *Service) GetProductBySlug(ctx context.Context, slug string) (*domain.Pr
 	return s.productRepo.FindBySlug(ctx, slug)
 }
 
+// GetPublishedProductBySlug retrieves an active product by slug for storefront display,
+// returning domain.ErrNotFound if the product is a draft or archived.
+func (s *Service) GetPublishedProductBySlug(ctx context.Context, slug string) (*domain.Product, error) {
+	product, err := s.productRepo.FindBySlug(ctx, slug)
+	if err != nil {
+		return nil, err
+	}
+
+	if product.Status != domain.StatusPublished {
+		return nil, domain.ErrNotFound
+	}
+
+	return product, nil
+}
+
+// ListPublishedProducts retrieves paginated active products for the storefront.
+func (s *Service) ListPublishedProducts(ctx context.Context, search string, page, limit int) ([]domain.Product, int, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 100 {
+		limit = 12
+	}
+	offset := (page - 1) * limit
+
+	return s.productRepo.ListPublished(ctx, search, limit, offset)
+}
+
 // ListProducts retrieves paginated products for the admin panel.
 func (s *Service) ListProducts(ctx context.Context, search string, status string, page, limit int) ([]domain.Product, int, error) {
 	if page < 1 {

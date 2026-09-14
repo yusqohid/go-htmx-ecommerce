@@ -307,3 +307,63 @@ func TestUploadAndDeleteFile(t *testing.T) {
 	}
 	_ = filepath.Base
 }
+
+func TestService_Storefront(t *testing.T) {
+	productRepo := NewMockProductRepository()
+	fileRepo := NewMockProductFileRepository()
+	storageMgr, _ := storage.New(t.TempDir())
+	service := product.NewService(productRepo, fileRepo, storageMgr)
+	ctx := context.Background()
+
+	// 1. Create a published product
+	pubProd, err := service.CreateProduct(ctx, product.CreateProductInput{
+		Name:             "Go Masterclass",
+		Slug:             "go-masterclass",
+		ShortDescription: "Complete Go course",
+		Price:            250000,
+		Status:           domain.StatusPublished,
+	})
+	if err != nil {
+		t.Fatalf("failed to create published product: %v", err)
+	}
+
+	// 2. Create a draft product
+	draftProd, err := service.CreateProduct(ctx, product.CreateProductInput{
+		Name:             "Draft Course",
+		Slug:             "draft-course",
+		ShortDescription: "Unpublished course",
+		Price:            100000,
+		Status:           domain.StatusDraft,
+	})
+	if err != nil {
+		t.Fatalf("failed to create draft product: %v", err)
+	}
+
+	// 3. ListPublishedProducts should only return published product
+	list, total, err := service.ListPublishedProducts(ctx, "", 1, 10)
+	if err != nil {
+		t.Fatalf("ListPublishedProducts failed: %v", err)
+	}
+	if total != 1 || len(list) != 1 {
+		t.Errorf("expected 1 published product, got total=%d, len=%d", total, len(list))
+	}
+	if list[0].ID != pubProd.ID {
+		t.Errorf("expected pubProd ID %d, got %d", pubProd.ID, list[0].ID)
+	}
+
+	// 4. GetPublishedProductBySlug for published product should succeed
+	found, err := service.GetPublishedProductBySlug(ctx, "go-masterclass")
+	if err != nil {
+		t.Fatalf("expected to find published product, got %v", err)
+	}
+	if found.Name != "Go Masterclass" {
+		t.Errorf("expected 'Go Masterclass', got %s", found.Name)
+	}
+
+	// 5. GetPublishedProductBySlug for draft product should return ErrNotFound
+	_, err = service.GetPublishedProductBySlug(ctx, draftProd.Slug)
+	if !errors.Is(err, domain.ErrNotFound) {
+		t.Errorf("expected ErrNotFound for draft product in storefront, got %v", err)
+	}
+}
+

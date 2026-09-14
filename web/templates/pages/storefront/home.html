@@ -1,0 +1,137 @@
+{{ define "content" }}
+
+<!-- Hero Section -->
+<section class="hero-section text-center">
+  <div class="container">
+    <div class="hero-badge">
+      <i class="bi bi-stars"></i>
+      <span>Curated Digital Assets &amp; Boilerplates</span>
+    </div>
+    <h1 class="hero-title mb-3">
+      Build faster with production-grade <br class="d-none d-md-inline">digital developer kits.
+    </h1>
+    <p class="hero-subtitle mb-4">
+      Instant delivery, verified file integrity, and lifetime access to high-performance templates, guides, and developer tooling.
+    </p>
+    <div class="d-flex justify-content-center gap-3">
+      <a href="/products" class="btn btn-success btn-lg rounded-pill px-4 fw-semibold shadow-sm">
+        Explore Catalog <i class="bi bi-arrow-right ms-1"></i>
+      </a>
+      {{ if not .User }}
+        <a href="/register" class="btn btn-outline-secondary btn-lg rounded-pill px-4">
+          Create Account
+        </a>
+      {{ end }}
+    </div>
+  </div>
+</section>
+
+<!-- Value Propositions / Highlights -->
+<section class="py-5 bg-white border-bottom">
+  <div class="container">
+    <div class="row g-4">
+      <div class="col-12 col-md-4">
+        <div class="feature-highlight-card">
+          <div class="feature-icon-wrapper">
+            <i class="bi bi-lightning-charge-fill"></i>
+          </div>
+          <h5 class="fw-bold mb-2">Instant Fulfillment</h5>
+          <p class="text-muted small mb-0">
+            No waiting. Once your payment is verified by our secure payment provider, your files are ready for direct download.
+          </p>
+        </div>
+      </div>
+      <div class="col-12 col-md-4">
+        <div class="feature-highlight-card">
+          <div class="feature-icon-wrapper">
+            <i class="bi bi-shield-check"></i>
+          </div>
+          <h5 class="fw-bold mb-2">Cryptographic Integrity</h5>
+          <p class="text-muted small mb-0">
+            Every digital asset is checked against SHA-256 checksums to ensure your files are pristine, authentic, and uncorrupted.
+          </p>
+        </div>
+      </div>
+      <div class="col-12 col-md-4">
+        <div class="feature-highlight-card">
+          <div class="feature-icon-wrapper">
+            <i class="bi bi-patch-check-fill"></i>
+          </div>
+          <h5 class="fw-bold mb-2">Curated Single-Vendor</h5>
+          <p class="text-muted small mb-0">
+            No bloated third-party marketplaces. Every product in Sellora is authored, maintained, and backed directly by us.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Featured Products Section -->
+<section class="py-5">
+  <div class="container">
+    <div class="d-flex align-items-end justify-content-between mb-4">
+      <div>
+        <h2 class="fw-bold mb-1">Featured Products</h2>
+        <p class="text-muted small mb-0">Handpicked digital resources to accelerate your development.</p>
+      </div>
+      <a href="/products" class="text-success fw-semibold text-decoration-none small">
+        View All ({{ .TotalPublished }}) <i class="bi bi-chevron-right"></i>
+      </a>
+    </div>
+
+    {{ if .FeaturedProducts }}
+      <div class="row g-4">
+        {{ range .FeaturedProducts }}
+          <div class="col-12 col-md-6 col-lg-4">
+            <div class="product-card">
+              <div class="product-card-thumb">
+                {{ if .ThumbnailURL }}
+                  <img src="{{ .ThumbnailURL }}" alt="{{ .Name }}">
+                {{ else }}
+                  <i class="bi bi-box-seam thumb-icon"></i>
+                {{ end }}
+              </div>
+              <div class="product-card-body">
+                <h3 class="product-card-title">
+                  <a href="/products/{{ .Slug }}">{{ .Name }}</a>
+                </h3>
+                <p class="product-card-desc">{{ .ShortDescription }}</p>
+                <div class="product-card-footer">
+                  <span class="product-price">{{ formatMoney .Price }}</span>
+                  <a href="/products/{{ .Slug }}" class="btn btn-sm btn-outline-success rounded-pill px-3 fw-medium">
+                    View Details
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        {{ end }}
+      </div>
+    {{ else }}
+      <div class="text-center py-5 bg-light rounded-4 border">
+        <i class="bi bi-inbox fs-1 text-muted mb-3 d-block"></i>
+        <h5 class="fw-bold">No Products Available Yet</h5>
+        <p class="text-muted small">Stay tuned! We are crafting brand-new digital kits and will publish them soon.</p>
+        {{ if and .User .User.IsAdmin }}
+          <a href="/admin/products/new" class="btn btn-success btn-sm rounded-pill mt-2">
+            <i class="bi bi-plus-lg me-1"></i> Add Product in Admin
+          </a>
+        {{ end }}
+      </div>
+    {{ end }}
+  </div>
+</section>
+
+<!-- Bottom CTA Section -->
+<section class="py-5 bg-light border-top">
+  <div class="container text-center py-4">
+    <h3 class="fw-bold mb-2">Looking for a specific kit or template?</h3>
+    <p class="text-muted small mb-4">Search through our full catalog or discover new releases updated regularly.</p>
+    <a href="/products" class="btn btn-success rounded-pill px-4 fw-semibold">
+      Browse All Products <i class="bi bi-arrow-right ms-1"></i>
+    </a>
+  </div>
+</section>
+
+{{ end }}

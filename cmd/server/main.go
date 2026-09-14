@@ -53,6 +53,7 @@ func main() {
 	var productService *product.Service
 	var productRepo *product.PostgresProductRepository
 	var productHandler *product.Handler
+	var storefrontHandler *product.StorefrontHandler
 
 	if db != nil {
 		userRepo := auth.NewUserRepository(db.DB)
@@ -63,16 +64,18 @@ func main() {
 		fileRepo := product.NewProductFileRepository(db.DB)
 		productService = product.NewService(productRepo, fileRepo, storageManager)
 		productHandler = product.NewHandler(productService, productRepo, viewRenderer, cfg.PaymentProvider)
+		storefrontHandler = product.NewStorefrontHandler(productService, viewRenderer)
 	}
 	authHandler := auth.NewHandler(authService, viewRenderer, cfg.IsProduction())
 
 	// 6. Initialize router
 	router := appHTTP.NewRouter(appHTTP.RouterDeps{
-		Config:         cfg,
-		DB:             db,
-		AuthService:    authService,
-		AuthHandler:    authHandler,
-		ProductHandler: productHandler,
+		Config:            cfg,
+		DB:                db,
+		AuthService:       authService,
+		AuthHandler:       authHandler,
+		ProductHandler:    productHandler,
+		StorefrontHandler: storefrontHandler,
 	})
 
 	srv := &http.Server{

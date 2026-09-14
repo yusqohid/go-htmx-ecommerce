@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ if .Title }}{{ .Title }}{{ else }}Sellora - Curated Digital Products{{ end }}</title>
+  {{ if .MetaDesc }}<meta name="description" content="{{ .MetaDesc }}">{{ end }}
+
+  <!-- OpenGraph / Social Meta Block -->
+  {{ block "meta" . }}
+  <meta property="og:title" content="{{ if .Title }}{{ .Title }}{{ else }}Sellora - Curated Digital Products{{ end }}">
+  <meta property="og:description" content="{{ if .MetaDesc }}{{ .MetaDesc }}{{ else }}Instant access to curated developer kits, digital assets, and production-ready source code templates.{{ end }}">
+  <meta property="og:type" content="website">
+  {{ end }}
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="/static/admin/images/favicon.ico">
+
+  <!-- Core CSS Assets -->
+  <link rel="stylesheet" href="/static/admin/libs/bootstrap/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/static/admin/libs/bootstrap-icons/bootstrap-icons.css">
+  <link rel="stylesheet" href="/static/storefront/css/storefront.css">
+
+  <!-- HTMX for reactive server-rendered interactions -->
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <nav class="navbar navbar-expand-lg navbar-storefront">
+    <div class="container">
+      <a class="storefront-brand" href="/">
+        <i class="bi bi-bag-check-fill text-success"></i>
+        <span>Sellora</span>
+      </a>
+
+      <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent" aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
+        <i class="bi bi-list fs-3 text-dark"></i>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navbarContent">
+        <ul class="navbar-nav me-auto ms-lg-4 mb-2 mb-lg-0">
+          <li class="nav-item">
+            <a class="storefront-nav-link {{ if eq .ActiveNav "home" }}active{{ end }}" href="/">Home</a>
+          </li>
+          <li class="nav-item">
+            <a class="storefront-nav-link {{ if eq .ActiveNav "catalog" }}active{{ end }}" href="/products">Catalog</a>
+          </li>
+        </ul>
+
+        <div class="d-flex align-items-center gap-2">
+          {{ if .User }}
+            {{ if .User.IsAdmin }}
+              <a href="/admin" class="btn btn-sm btn-outline-success rounded-pill px-3">
+                <i class="bi bi-speedometer2 me-1"></i> Admin Panel
+              </a>
+            {{ else }}
+              <span class="text-muted small me-2 d-none d-md-inline">
+                Hi, <strong>{{ .User.Name }}</strong>
+              </span>
+            {{ end }}
+            <a href="/logout" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+              <i class="bi bi-box-arrow-right me-1"></i> Sign Out
+            </a>
+          {{ else }}
+            <a href="/login" class="storefront-nav-link px-3">Sign In</a>
+            <a href="/register" class="btn btn-sm btn-success rounded-pill px-3 fw-semibold">
+              Create Account
+            </a>
+          {{ end }}
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content Body -->
+  <main class="flex-grow-1">
+    {{ template "content" . }}
+  </main>
+
+  <!-- Footer -->
+  <footer class="storefront-footer">
+    <div class="container">
+      <div class="row g-4 mb-4">
+        <div class="col-12 col-md-5">
+          <a class="storefront-brand mb-2" href="/">
+            <i class="bi bi-bag-check-fill text-success"></i>
+            <span>Sellora</span>
+          </a>
+          <p class="text-muted small mt-2 pe-md-4">
+            Curated digital commerce platform for creators and developers. Delivering production-ready starter kits, source code, and premium digital goods with instant access.
+          </p>
+        </div>
+        <div class="col-6 col-md-3">
+          <h6 class="fw-bold text-dark mb-3">Explore</h6>
+          <ul class="list-unstyled small mb-0 d-flex flex-column gap-2">
+            <li><a href="/" class="text-muted text-decoration-none">Home</a></li>
+            <li><a href="/products" class="text-muted text-decoration-none">Product Catalog</a></li>
+            {{ if .User }}
+              {{ if .User.IsAdmin }}
+                <li><a href="/admin" class="text-muted text-decoration-none">Admin Dashboard</a></li>
+              {{ end }}
+            {{ else }}
+              <li><a href="/login" class="text-muted text-decoration-none">Customer Login</a></li>
+              <li><a href="/register" class="text-muted text-decoration-none">Register Account</a></li>
+            {{ end }}
+          </ul>
+        </div>
+        <div class="col-6 col-md-4">
+          <h6 class="fw-bold text-dark mb-3">Guarantees</h6>
+          <ul class="list-unstyled small text-muted mb-0 d-flex flex-column gap-2">
+            <li><i class="bi bi-lightning-charge text-success me-1"></i> Instant download after payment</li>
+            <li><i class="bi bi-shield-check text-success me-1"></i> SHA-256 verified integrity</li>
+            <li><i class="bi bi-credit-card text-success me-1"></i> Secure payment integration</li>
+          </ul>
+        </div>
+      </div>
+      <div class="pt-4 border-top text-center text-muted small">
+        &copy; 2026 Sellora Digital Commerce. All rights reserved. Server-first architecture powered by Go &amp; HTMX.
+      </div>
+    </div>
+  </footer>
+
+  <!-- Bootstrap 5 Bundle JS -->
+  <script src="/static/admin/libs/bootstrap/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

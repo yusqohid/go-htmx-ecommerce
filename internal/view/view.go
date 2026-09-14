@@ -45,6 +45,29 @@ func FuncMap() template.FuncMap {
 		},
 		"upper": strings.ToUpper,
 		"lower": strings.ToLower,
+		"add": func(a, b int) int {
+			return a + b
+		},
+		"sub": func(a, b int) int {
+			return a - b
+		},
+		"formatBytes": func(b int64) string {
+			const unit = 1024
+			if b < unit {
+				return fmt.Sprintf("%d B", b)
+			}
+			div, exp := int64(unit), 0
+			for n := b / unit; n >= unit; n /= unit {
+				div *= unit
+				exp++
+			}
+			return fmt.Sprintf("%.1f %cB", float64(b)/float64(div), "KMGTPE"[exp])
+		},
+		"nl2br": func(text string) template.HTML {
+			escaped := template.HTMLEscapeString(text)
+			replaced := strings.ReplaceAll(escaped, "\n", "<br>")
+			return template.HTML(replaced)
+		},
 	}
 }
 

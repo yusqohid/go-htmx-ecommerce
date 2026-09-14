@@ -1,0 +1,125 @@
+{{ define "content" }}
+
+<div class="container py-5">
+  <!-- Page Header -->
+  <div class="text-center mb-5">
+    <h1 class="fw-bold mb-2">Digital Product Catalog</h1>
+    <p class="text-muted">Explore our complete collection of curated developer kits, templates, and digital assets.</p>
+  </div>
+
+  <!-- Search Bar with Live HTMX Trigger -->
+  <div class="row justify-content-center mb-5">
+    <div class="col-12 col-md-8 col-lg-6">
+      <div class="catalog-search-wrapper">
+        <i class="bi bi-search catalog-search-icon"></i>
+        <input 
+          type="search" 
+          name="q" 
+          value="{{ .Search }}"
+          placeholder="Search products by title or keywords..."
+          class="form-control catalog-search-input"
+          hx-get="/products"
+          hx-trigger="keyup changed delay:300ms, search"
+          hx-target="#product-grid"
+          hx-select="#product-grid"
+          hx-indicator="#search-spinner"
+          hx-push-url="true"
+          autocomplete="off"
+        >
+        <div id="search-spinner" class="spinner-border spinner-border-sm text-success position-absolute end-0 top-50 translate-middle-y me-3 htmx-indicator" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reactive Product Grid Container (HTMX Target & Select) -->
+  <div id="product-grid">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+      <div class="text-muted small">
+        Showing <strong>{{ len .Products }}</strong> of <strong>{{ .Total }}</strong> published items
+        {{ if .Search }}
+          for search term <span class="badge bg-light text-dark border ms-1">&ldquo;{{ .Search }}&rdquo;</span>
+        {{ end }}
+      </div>
+
+      {{ if .Search }}
+        <a href="/products" class="btn btn-sm btn-light border text-decoration-none small">
+          <i class="bi bi-x-circle me-1"></i> Clear Filter
+        </a>
+      {{ end }}
+    </div>
+
+    {{ if .Products }}
+      <div class="row g-4 mb-5">
+        {{ range .Products }}
+          <div class="col-12 col-md-6 col-lg-4">
+            <div class="product-card">
+              <div class="product-card-thumb">
+                {{ if .ThumbnailURL }}
+                  <img src="{{ .ThumbnailURL }}" alt="{{ .Name }}">
+                {{ else }}
+                  <i class="bi bi-box-seam thumb-icon"></i>
+                {{ end }}
+              </div>
+              <div class="product-card-body">
+                <h3 class="product-card-title">
+                  <a href="/products/{{ .Slug }}">{{ .Name }}</a>
+                </h3>
+                <p class="product-card-desc">{{ .ShortDescription }}</p>
+                <div class="product-card-footer">
+                  <span class="product-price">{{ formatMoney .Price }}</span>
+                  <a href="/products/{{ .Slug }}" class="btn btn-sm btn-outline-success rounded-pill px-3 fw-medium">
+                    View Details
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        {{ end }}
+      </div>
+
+      <!-- Pagination (when multiple pages exist) -->
+      {{ if gt .TotalPages 1 }}
+        <nav aria-label="Catalog pagination" class="d-flex justify-content-center">
+          <ul class="pagination">
+            <li class="page-item {{ if le .CurrentPage 1 }}disabled{{ end }}">
+              <a class="page-link" href="/products?q={{ .Search }}&page={{ sub .CurrentPage 1 }}" aria-label="Previous">
+                <span aria-hidden="true">&laquo;</span>
+              </a>
+            </li>
+            <li class="page-item disabled">
+              <span class="page-link text-muted">Page {{ .CurrentPage }} of {{ .TotalPages }}</span>
+            </li>
+            <li class="page-item {{ if ge .CurrentPage .TotalPages }}disabled{{ end }}">
+              <a class="page-link" href="/products?q={{ .Search }}&page={{ add .CurrentPage 1 }}" aria-label="Next">
+                <span aria-hidden="true">&raquo;</span>
+              </a>
+            </li>
+          </ul>
+        </nav>
+      {{ end }}
+
+    {{ else }}
+      <!-- Empty State -->
+      <div class="text-center py-5 bg-light rounded-4 border">
+        <i class="bi bi-search fs-1 text-muted mb-3 d-block"></i>
+        <h5 class="fw-bold">No Products Found</h5>
+        <p class="text-muted small mb-3">
+          {{ if .Search }}
+            No products matched your search for &ldquo;{{ .Search }}&rdquo;. Try different keywords or reset your search.
+          {{ else }}
+            There are currently no published products available in the catalog.
+          {{ end }}
+        </p>
+        {{ if .Search }}
+          <a href="/products" class="btn btn-outline-success btn-sm rounded-pill px-3">
+            Reset All Filters
+          </a>
+        {{ end }}
+      </div>
+    {{ end }}
+  </div>
+</div>
+
+{{ end }}

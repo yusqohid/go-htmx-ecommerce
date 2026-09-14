@@ -76,3 +76,9 @@ Run all unit tests:
 ```bash
 go test ./... -v
 ```
+
+---
+
+## Future Improvements
+
+See [TODO.md](TODO.md) for planned UI/UX visual polish, design system enhancements, and upcoming architectural improvements.

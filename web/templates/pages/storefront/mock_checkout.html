@@ -1,0 +1,62 @@
+{{ define "content" }}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-8 col-lg-6">
+
+      <div class="card border-warning shadow p-4 p-md-5 rounded-4 text-center">
+        <div class="badge bg-warning text-dark py-2 px-3 rounded-pill align-self-center mb-3">
+          <i class="bi bi-tools me-1"></i> Sandbox Test Gateway
+        </div>
+
+        <h3 class="fw-bold mb-2">Simulated Payment Portal</h3>
+        <p class="text-muted small mb-4">
+          This is a development mock payment screen. Use the options below to simulate external payment gateway responses.
+        </p>
+
+        <!-- Transaction Details -->
+        <div class="p-3 bg-light rounded-3 text-start mb-4">
+          <div class="d-flex justify-content-between mb-2 small text-muted">
+            <span>Order Reference:</span>
+            <strong class="font-monospace text-dark">{{ .Order.Reference }}</strong>
+          </div>
+          <div class="d-flex justify-content-between mb-2 small text-muted">
+            <span>Payer:</span>
+            <strong class="text-dark">{{ .Order.Customer.Name }} ({{ .Order.Customer.Email }})</strong>
+          </div>
+          <div class="d-flex justify-content-between mb-2 small text-muted">
+            <span>Product:</span>
+            {{ range .Order.Items }}
+              <strong class="text-dark">{{ .ProductName }}</strong>
+            {{ end }}
+          </div>
+          <div class="border-top pt-2 mt-2 d-flex justify-content-between">
+            <span class="fw-bold text-dark">Amount Due:</span>
+            <span class="fs-4 fw-bold text-success">{{ formatMoney .Order.TotalAmount }}</span>
+          </div>
+        </div>
+
+        <!-- Simulation Buttons -->
+        <div class="d-grid gap-3">
+          <form method="POST" action="/mock-checkout/simulate">
+            <input type="hidden" name="ref" value="{{ .Order.Reference }}">
+            <input type="hidden" name="status" value="paid">
+            <button type="submit" class="btn btn-success btn-lg w-100 rounded-pill fw-bold shadow-sm">
+              <i class="bi bi-check2-circle me-1"></i> Simulate Payment Success (PAID)
+            </button>
+          </form>
+
+          <form method="POST" action="/mock-checkout/simulate">
+            <input type="hidden" name="ref" value="{{ .Order.Reference }}">
+            <input type="hidden" name="status" value="failed">
+            <button type="submit" class="btn btn-outline-danger w-100 rounded-pill fw-semibold">
+              <i class="bi bi-x-circle me-1"></i> Simulate Payment Failure (FAILED)
+            </button>
+          </form>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</div>
+{{ end }}

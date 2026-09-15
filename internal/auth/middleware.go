@@ -25,6 +25,11 @@ func UserFromContext(ctx context.Context) *domain.User {
 	return u
 }
 
+// WithUser returns a copy of parent context with the authenticated user attached.
+func WithUser(parent context.Context, user *domain.User) context.Context {
+	return context.WithValue(parent, userContextKey, user)
+}
+
 // TokenFromContext retrieves the active session token from the request context.
 func TokenFromContext(ctx context.Context) string {
 	t, ok := ctx.Value(tokenContextKey).(string)

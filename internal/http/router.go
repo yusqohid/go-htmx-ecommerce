@@ -3,7 +3,6 @@ package http
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -11,9 +10,11 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/yusqohid/go-htmx-ecommerce/internal/auth"
 	"github.com/yusqohid/go-htmx-ecommerce/internal/config"
+	"github.com/yusqohid/go-htmx-ecommerce/internal/customer"
 	"github.com/yusqohid/go-htmx-ecommerce/internal/database"
 	"github.com/yusqohid/go-htmx-ecommerce/internal/domain"
 	"github.com/yusqohid/go-htmx-ecommerce/internal/order"
+	"github.com/yusqohid/go-htmx-ecommerce/internal/payment"
 	"github.com/yusqohid/go-htmx-ecommerce/internal/product"
 	"github.com/yusqohid/go-htmx-ecommerce/web/static"
 )
@@ -27,6 +28,10 @@ type RouterDeps struct {
 	ProductHandler    *product.Handler
 	StorefrontHandler *product.StorefrontHandler
 	OrderHandler      *order.Handler
+	PaymentHandler    *payment.Handler
+	DownloadHandler   *product.DownloadHandler
+	CustomerHandler   *customer.Handler
+	AdminOrderHandler *order.AdminHandler
 }
 
 // NewRouter sets up the Chi HTTP router with base middlewares, static files, auth, and routes.
@@ -108,6 +113,26 @@ func NewRouter(deps RouterDeps) http.Handler {
 		r.Post("/mock-checkout/simulate", deps.OrderHandler.MockSimulatePayment)
 	}
 
+	// Payment Provider Webhooks (LYNK.ID, Mock, etc.)
+	if deps.PaymentHandler != nil {
+		r.Post("/webhooks/{provider}", deps.PaymentHandler.HandleWebhook)
+	}
+
+	// Secure Digital Product Downloads (requires customer authentication & paid order)
+	if deps.DownloadHandler != nil {
+		r.Get("/downloads/{fileID}", deps.DownloadHandler.DownloadFile)
+	}
+
+	// Customer Account & Order History
+	if deps.CustomerHandler != nil {
+		r.Group(func(cust chi.Router) {
+			cust.Use(auth.RequireAuth("/login"))
+			cust.Get("/account", deps.CustomerHandler.AccountHome)
+			cust.Get("/account/orders", deps.CustomerHandler.ListOrders)
+			cust.Get("/account/orders/{id}", deps.CustomerHandler.OrderDetail)
+		})
+	}
+
 	// Protected Admin Dashboard & Product Management
 	if deps.ProductHandler != nil {
 		r.Group(func(admin chi.Router) {
@@ -126,11 +151,11 @@ func NewRouter(deps RouterDeps) http.Handler {
 			admin.Post("/admin/products/{id}/files/{fileID}/delete", deps.ProductHandler.DeleteFile)
 			admin.Post("/admin/products/{id}/delete", deps.ProductHandler.DeleteProduct)
 
-			// Placeholder orders route
-			admin.Get("/admin/orders", func(w http.ResponseWriter, r *http.Request) {
-				w.Header().Set("Content-Type", "text/html; charset=utf-8")
-				fmt.Fprint(w, `<!DOCTYPE html><html><body style="font-family:sans-serif;padding:2rem;"><h2>Orders Management</h2><p>Coming in Phase 5 & 8!</p><p><a href="/admin">&larr; Back to Dashboard</a></p></body></html>`)
-			})
+			// Admin Orders Management
+			if deps.AdminOrderHandler != nil {
+				admin.Get("/admin/orders", deps.AdminOrderHandler.ListOrders)
+				admin.Get("/admin/orders/{id}", deps.AdminOrderHandler.OrderDetail)
+			}
 		})
 	}
 

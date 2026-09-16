@@ -131,6 +131,18 @@ func (s *Service) ListCustomerOrders(ctx context.Context, customerID int64) ([]d
 	return s.orderRepo.ListByCustomerID(ctx, customerID)
 }
 
+// ListAllOrders retrieves paginated orders for administrative management.
+func (s *Service) ListAllOrders(ctx context.Context, page, pageSize int) ([]domain.Order, int, error) {
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 20
+	}
+	offset := (page - 1) * pageSize
+	return s.orderRepo.ListAll(ctx, pageSize, offset)
+}
+
 // UpdateOrderStatus transitions an order to a new state (e.g. paid, failed, cancelled).
 func (s *Service) UpdateOrderStatus(ctx context.Context, id int64, status domain.OrderStatus, paymentRef string) error {
 	switch status {

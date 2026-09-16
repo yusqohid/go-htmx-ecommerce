@@ -1,0 +1,106 @@
+{{ define "content" }}
+<!-- START: Page Header Banner -->
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Customer Orders</h1>
+    <p class="page-subtitle">Monitor transaction records, customer details, and payment settlement statuses.</p>
+  </div>
+</div>
+<!-- END: Page Header Banner -->
+
+<!-- START: Table Card Container (Spark Admin Component) -->
+<div class="table-card-custom">
+  <!-- Responsive Table Wrapper -->
+  <div class="table-responsive">
+    <table class="table-custom">
+      <thead>
+        <tr>
+          <th>Reference</th>
+          <th>Customer</th>
+          <th>Date</th>
+          <th>Items</th>
+          <th>Amount</th>
+          <th>Gateway</th>
+          <th>Status</th>
+          <th class="text-center">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{ if .Orders }}
+          {{ range .Orders }}
+          <tr>
+            <td>
+              <a href="/admin/orders/{{ .ID }}" class="fw-bold text-dark text-decoration-none font-monospace">
+                {{ .Reference }}
+              </a>
+            </td>
+            <td>
+              <div class="table-user-cell">
+                <div class="d-flex flex-column">
+                  <span class="fw-medium text-dark">{{ if .Customer }}{{ .Customer.Name }}{{ else }}—{{ end }}</span>
+                  <span class="text-muted small">{{ if .Customer }}{{ .Customer.Email }}{{ else }}—{{ end }}</span>
+                </div>
+              </div>
+            </td>
+            <td class="text-muted small">{{ formatDate .CreatedAt }}</td>
+            <td>
+              <span class="badge bg-light text-muted border rounded-pill px-2.5 py-1">
+                {{ len .Items }} item{{ if ne (len .Items) 1 }}s{{ end }}
+              </span>
+            </td>
+            <td class="table-amount fw-bold text-dark">{{ formatMoney .TotalAmount }}</td>
+            <td>
+              <span class="badge bg-light text-dark border text-uppercase font-monospace small">
+                {{ .PaymentProvider }}
+              </span>
+            </td>
+            <td>
+              {{ if eq .Status "paid" }}
+                <span class="badge-table success">Paid</span>
+              {{ else if eq .Status "pending" }}
+                <span class="badge-table pending">Pending</span>
+              {{ else if eq .Status "failed" }}
+                <span class="badge-table danger">Failed</span>
+              {{ else }}
+                <span class="badge bg-secondary-subtle text-secondary rounded-pill px-2.5 py-1 text-capitalize">
+                  {{ .Status }}
+                </span>
+              {{ end }}
+            </td>
+            <td class="text-center">
+              <a href="/admin/orders/{{ .ID }}" class="table-btn-action" title="View Order Details">
+                <i class="bi bi-eye"></i>
+              </a>
+            </td>
+          </tr>
+          {{ end }}
+        {{ else }}
+          <tr>
+            <td colspan="8" class="text-center py-5 text-muted">
+              <i class="bi bi-receipt fs-1 d-block mb-2 text-secondary"></i>
+              No orders placed yet.
+            </td>
+          </tr>
+        {{ end }}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Footer Controls / Pagination Info -->
+  <div class="table-footer-control d-flex justify-content-between align-items-center">
+    <span class="table-pagination-info">Showing {{ len .Orders }} of {{ .Total }} orders</span>
+    {{ if gt .TotalPages 1 }}
+      <div class="pagination-custom d-flex gap-1">
+        {{ if gt .Page 1 }}
+          <a href="/admin/orders?page={{ sub .Page 1 }}" class="btn-custom btn-custom-outline btn-sm">Previous</a>
+        {{ end }}
+        <span class="btn-custom btn-custom-outline btn-sm active">Page {{ .Page }} of {{ .TotalPages }}</span>
+        {{ if lt .Page .TotalPages }}
+          <a href="/admin/orders?page={{ add .Page 1 }}" class="btn-custom btn-custom-outline btn-sm">Next</a>
+        {{ end }}
+      </div>
+    {{ end }}
+  </div>
+</div>
+<!-- END: Table Card Container -->
+{{ end }}

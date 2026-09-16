@@ -1,0 +1,131 @@
+{{ define "content" }}
+<div class="container py-5">
+  <div class="row">
+    <!-- Account Sidebar / Breadcrumb -->
+    <div class="col-lg-12 mb-4">
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 border-bottom pb-4">
+        <div>
+          <h1 class="h3 fw-bold text-dark mb-1">My Purchases & Orders</h1>
+          <p class="text-muted mb-0">Access your purchased digital products, license downloads, and transaction history.</p>
+        </div>
+        <div>
+          <a href="/products" class="btn btn-outline-success rounded-pill px-4">
+            <i class="bi bi-grid me-1"></i> Browse Catalog
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Orders Content -->
+    <div class="col-lg-12">
+      {{ if .Orders }}
+        <div class="d-flex flex-column gap-4">
+          {{ range .Orders }}
+            <div class="card border rounded-3 shadow-sm overflow-hidden">
+              <!-- Order Header -->
+              <div class="card-header bg-light py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div class="d-flex flex-wrap align-items-center gap-3">
+                  <div>
+                    <span class="text-muted small d-block">Order Reference</span>
+                    <span class="fw-bold text-dark">{{ .Reference }}</span>
+                  </div>
+                  <div class="border-start ps-3 d-none d-sm-block">
+                    <span class="text-muted small d-block">Date Placed</span>
+                    <span class="text-dark small">{{ formatDate .CreatedAt }}</span>
+                  </div>
+                  <div class="border-start ps-3 d-none d-md-block">
+                    <span class="text-muted small d-block">Payment Method</span>
+                    <span class="text-dark small text-uppercase">{{ .PaymentProvider }}</span>
+                  </div>
+                </div>
+
+                <div class="d-flex align-items-center gap-3">
+                  <div>
+                    <span class="text-muted small d-block text-end">Total Amount</span>
+                    <span class="fw-bold text-dark">{{ formatMoney .TotalAmount }}</span>
+                  </div>
+                  <div>
+                    {{ if eq .Status "paid" }}
+                      <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill fw-semibold">
+                        <i class="bi bi-check-circle-fill me-1"></i> Paid
+                      </span>
+                    {{ else if eq .Status "pending" }}
+                      <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-3 py-2 rounded-pill fw-semibold">
+                        <i class="bi bi-clock-fill me-1"></i> Pending
+                      </span>
+                    {{ else if eq .Status "failed" }}
+                      <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2 rounded-pill fw-semibold">
+                        <i class="bi bi-x-circle-fill me-1"></i> Failed
+                      </span>
+                    {{ else }}
+                      <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-3 py-2 rounded-pill fw-semibold text-capitalize">
+                        {{ .Status }}
+                      </span>
+                    {{ end }}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Order Body / Line Items -->
+              <div class="card-body p-4">
+                <div class="row g-4 align-items-center">
+                  <div class="col-lg-8">
+                    <h6 class="fw-bold text-dark mb-3">Items Included:</h6>
+                    <ul class="list-group list-group-flush">
+                      {{ range .Items }}
+                        <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                          <div>
+                            <span class="fw-medium text-dark">{{ .ProductName }}</span>
+                            <span class="text-muted small ms-2">({{ formatMoney .Price }})</span>
+                          </div>
+
+                          <!-- Download Actions for Paid Orders -->
+                          {{ if eq $.Status "paid" }}
+                            {{ $files := index $.ProductFiles .ProductID }}
+                            {{ if $files }}
+                              <div class="d-flex flex-wrap gap-2">
+                                {{ range $files }}
+                                  <a href="/downloads/{{ .ID }}" class="btn btn-sm btn-success rounded-pill px-3 fw-medium">
+                                    <i class="bi bi-download me-1"></i> Download {{ .OriginalName }}
+                                    {{ if .FileSize }}<span class="opacity-75 small">({{ formatBytes .FileSize }})</span>{{ end }}
+                                  </a>
+                                {{ end }}
+                              </div>
+                            {{ else }}
+                              <span class="badge bg-light text-muted border">No file attached yet</span>
+                            {{ end }}
+                          {{ end }}
+                        </li>
+                      {{ end }}
+                    </ul>
+                  </div>
+
+                  <div class="col-lg-4 text-lg-end border-start-lg ps-lg-4">
+                    <a href="/account/orders/{{ .Reference }}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                      View Order Receipt <i class="bi bi-chevron-right ms-1"></i>
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          {{ end }}
+        </div>
+      {{ else }}
+        <!-- Empty State -->
+        <div class="text-center py-5 my-5 border rounded-3 bg-light">
+          <div class="display-4 text-muted mb-3">
+            <i class="bi bi-bag-x"></i>
+          </div>
+          <h3 class="h4 fw-bold text-dark mb-2">No Purchases Yet</h3>
+          <p class="text-muted mb-4 max-w-md mx-auto">
+            You have not placed any orders yet. Explore our digital catalog to find templates, assets, and ebooks!
+          </p>
+          <a href="/products" class="btn btn-success rounded-pill px-4 fw-semibold">
+            <i class="bi bi-compass me-1"></i> Explore Digital Products
+          </a>
+        </div>
+      {{ end }}
+    </div>
+  </div>
+</div>
+{{ end }}

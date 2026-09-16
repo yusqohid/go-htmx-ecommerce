@@ -13,6 +13,7 @@ import (
 
 	"github.com/yusqohid/go-htmx-ecommerce/internal/auth"
 	"github.com/yusqohid/go-htmx-ecommerce/internal/config"
+	"github.com/yusqohid/go-htmx-ecommerce/internal/customer"
 	"github.com/yusqohid/go-htmx-ecommerce/internal/database"
 	appHTTP "github.com/yusqohid/go-htmx-ecommerce/internal/http"
 	"github.com/yusqohid/go-htmx-ecommerce/internal/order"
@@ -57,6 +58,10 @@ func main() {
 	var productHandler *product.Handler
 	var storefrontHandler *product.StorefrontHandler
 	var orderHandler *order.Handler
+	var paymentHandler *payment.Handler
+	var downloadHandler *product.DownloadHandler
+	var customerHandler *customer.Handler
+	var adminOrderHandler *order.AdminHandler
 
 	if db != nil {
 		userRepo := auth.NewUserRepository(db.DB)
@@ -73,9 +78,18 @@ func main() {
 		if err != nil {
 			log.Fatalf("Failed to initialize payment provider: %v", err)
 		}
+		paymentEventRepo := payment.NewPaymentEventRepository(db.DB)
+
 		orderRepo := order.NewOrderRepository(db.DB)
 		orderService := order.NewService(orderRepo, productRepo, paymentProvider)
 		orderHandler = order.NewHandler(orderService, productRepo, viewRenderer, paymentProvider.Name())
+
+		paymentService := payment.NewService(paymentProvider, paymentEventRepo, orderService)
+		paymentHandler = payment.NewHandler(paymentService)
+
+		downloadHandler = product.NewDownloadHandler(fileRepo, orderService, storageManager)
+		customerHandler = customer.NewHandler(orderService, fileRepo, viewRenderer)
+		adminOrderHandler = order.NewAdminHandler(orderService, viewRenderer)
 	}
 	authHandler := auth.NewHandler(authService, viewRenderer, cfg.IsProduction())
 
@@ -88,6 +102,10 @@ func main() {
 		ProductHandler:    productHandler,
 		StorefrontHandler: storefrontHandler,
 		OrderHandler:      orderHandler,
+		PaymentHandler:    paymentHandler,
+		DownloadHandler:   downloadHandler,
+		CustomerHandler:   customerHandler,
+		AdminOrderHandler: adminOrderHandler,
 	})
 
 	srv := &http.Server{

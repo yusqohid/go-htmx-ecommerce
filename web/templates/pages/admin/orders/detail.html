@@ -1,0 +1,112 @@
+{{ define "content" }}
+<!-- START: Page Header Banner -->
+<div class="page-header">
+  <div>
+    <div class="mb-2">
+      <a href="/admin/orders" class="text-decoration-none text-muted small">
+        <i class="bi bi-arrow-left me-1"></i> Back to Orders List
+      </a>
+    </div>
+    <h1 class="page-title">Order {{ .Order.Reference }}</h1>
+    <p class="page-subtitle">Placed on {{ formatDate .Order.CreatedAt }}</p>
+  </div>
+  <div>
+    {{ if eq .Order.Status "paid" }}
+      <span class="badge-table success fs-6 py-2 px-3">Paid</span>
+    {{ else if eq .Order.Status "pending" }}
+      <span class="badge-table pending fs-6 py-2 px-3">Pending</span>
+    {{ else if eq .Order.Status "failed" }}
+      <span class="badge-table danger fs-6 py-2 px-3">Failed</span>
+    {{ else }}
+      <span class="badge bg-secondary-subtle text-secondary fs-6 py-2 px-3 text-capitalize rounded-pill">
+        {{ .Order.Status }}
+      </span>
+    {{ end }}
+  </div>
+</div>
+<!-- END: Page Header Banner -->
+
+<div class="row g-4">
+  <!-- Left Column: Customer & Payment Details -->
+  <div class="col-lg-4">
+    <!-- Customer Info Card -->
+    <div class="table-card-custom mb-4 p-4">
+      <h5 class="fw-bold text-dark mb-3">
+        <i class="bi bi-person me-2 text-success"></i> Customer Details
+      </h5>
+      <div class="mb-3">
+        <span class="text-muted small d-block">Name:</span>
+        <strong class="text-dark">{{ if .Order.Customer }}{{ .Order.Customer.Name }}{{ else }}—{{ end }}</strong>
+      </div>
+      <div class="mb-3">
+        <span class="text-muted small d-block">Email:</span>
+        <span class="text-dark">{{ if .Order.Customer }}{{ .Order.Customer.Email }}{{ else }}—{{ end }}</span>
+      </div>
+      <div>
+        <span class="text-muted small d-block">Customer ID:</span>
+        <span class="font-monospace text-muted small">#{{ .Order.CustomerID }}</span>
+      </div>
+    </div>
+
+    <!-- Payment & Settlement Card -->
+    <div class="table-card-custom p-4">
+      <h5 class="fw-bold text-dark mb-3">
+        <i class="bi bi-credit-card me-2 text-success"></i> Payment Summary
+      </h5>
+      <div class="mb-3">
+        <span class="text-muted small d-block">Provider:</span>
+        <span class="badge bg-light text-dark border text-uppercase font-monospace">
+          {{ .Order.PaymentProvider }}
+        </span>
+      </div>
+      <div class="mb-3">
+        <span class="text-muted small d-block">Gateway Transaction Reference:</span>
+        <span class="font-monospace text-dark small">{{ if .Order.PaymentReference }}{{ .Order.PaymentReference }}{{ else }}—{{ end }}</span>
+      </div>
+      <div class="mb-3">
+        <span class="text-muted small d-block">Last Updated:</span>
+        <span class="text-dark small">{{ formatDate .Order.UpdatedAt }}</span>
+      </div>
+      <div class="border-top pt-3 mt-3 d-flex justify-content-between align-items-center">
+        <strong class="text-dark">Total Settled:</strong>
+        <strong class="text-success fs-5">{{ formatMoney .Order.TotalAmount }}</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Column: Order Line Items -->
+  <div class="col-lg-8">
+    <div class="table-card-custom">
+      <div class="p-4 border-bottom">
+        <h5 class="fw-bold text-dark mb-0">Purchased Line Items</h5>
+      </div>
+      <div class="table-responsive">
+        <table class="table-custom">
+          <thead>
+            <tr>
+              <th>Product Name</th>
+              <th>Product ID</th>
+              <th class="text-end">Price Snapshot</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{ range .Order.Items }}
+              <tr>
+                <td class="fw-medium text-dark">{{ .ProductName }}</td>
+                <td class="font-monospace text-muted small">#{{ .ProductID }}</td>
+                <td class="text-end fw-bold text-dark">{{ formatMoney .Price }}</td>
+              </tr>
+            {{ end }}
+          </tbody>
+          <tfoot>
+            <tr>
+              <th colspan="2" class="text-end">Order Total:</th>
+              <th class="text-end text-success fs-5">{{ formatMoney .Order.TotalAmount }}</th>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{{ end }}

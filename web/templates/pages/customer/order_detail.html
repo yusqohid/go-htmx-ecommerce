@@ -1,0 +1,117 @@
+{{ define "content" }}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <!-- Breadcrumb & Back -->
+      <div class="mb-4">
+        <a href="/account/orders" class="text-decoration-none text-muted small">
+          <i class="bi bi-arrow-left me-1"></i> Back to My Orders
+        </a>
+      </div>
+
+      <div class="card border rounded-3 shadow-sm overflow-hidden">
+        <!-- Receipt Header -->
+        <div class="card-header bg-light p-4 border-bottom">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <span class="text-muted small text-uppercase fw-bold">Order Receipt</span>
+              <h2 class="h4 fw-bold text-dark mt-1 mb-0">{{ .Order.Reference }}</h2>
+            </div>
+            <div>
+              {{ if eq .Order.Status "paid" }}
+                <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill fw-semibold">
+                  <i class="bi bi-check-circle-fill me-1"></i> Paid
+                </span>
+              {{ else if eq .Order.Status "pending" }}
+                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-3 py-2 rounded-pill fw-semibold">
+                  <i class="bi bi-clock-fill me-1"></i> Pending Payment
+                </span>
+              {{ else if eq .Order.Status "failed" }}
+                <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2 rounded-pill fw-semibold">
+                  <i class="bi bi-x-circle-fill me-1"></i> Failed
+                </span>
+              {{ else }}
+                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-3 py-2 rounded-pill fw-semibold text-capitalize">
+                  {{ .Order.Status }}
+                </span>
+              {{ end }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Receipt Metadata -->
+        <div class="card-body p-4">
+          <div class="row g-3 mb-4 pb-4 border-bottom text-muted small">
+            <div class="col-sm-4">
+              <span class="d-block text-muted">Date:</span>
+              <strong class="text-dark">{{ formatDate .Order.CreatedAt }}</strong>
+            </div>
+            <div class="col-sm-4">
+              <span class="d-block text-muted">Payment Provider:</span>
+              <strong class="text-dark text-uppercase">{{ .Order.PaymentProvider }}</strong>
+            </div>
+            <div class="col-sm-4">
+              <span class="d-block text-muted">Payment Reference:</span>
+              <strong class="text-dark">{{ if .Order.PaymentReference }}{{ .Order.PaymentReference }}{{ else }}—{{ end }}</strong>
+            </div>
+          </div>
+
+          <!-- Line Items & Downloads -->
+          <h5 class="fw-bold text-dark mb-3">Purchased Items</h5>
+          <div class="table-responsive mb-4">
+            <table class="table align-middle">
+              <thead class="table-light small">
+                <tr>
+                  <th>Product</th>
+                  <th class="text-end">Price</th>
+                </tr>
+              </thead>
+              <tbody>
+                {{ range .Order.Items }}
+                  <tr>
+                    <td>
+                      <div class="fw-semibold text-dark">{{ .ProductName }}</div>
+                      <!-- Download button if order is paid -->
+                      {{ if eq $.Order.Status "paid" }}
+                        {{ $files := index $.ProductFiles .ProductID }}
+                        {{ if $files }}
+                          <div class="mt-2 d-flex flex-wrap gap-2">
+                            {{ range $files }}
+                              <a href="/downloads/{{ .ID }}" class="btn btn-sm btn-success rounded-pill px-3 py-1">
+                                <i class="bi bi-download me-1"></i> Download {{ .OriginalName }}
+                                {{ if .FileSize }}<span class="opacity-75 small">({{ formatBytes .FileSize }})</span>{{ end }}
+                              </a>
+                            {{ end }}
+                          </div>
+                        {{ else }}
+                          <span class="text-muted small d-block mt-1">No download files attached to this product yet.</span>
+                        {{ end }}
+                      {{ end }}
+                    </td>
+                    <td class="text-end fw-medium text-dark">{{ formatMoney .Price }}</td>
+                  </tr>
+                {{ end }}
+              </tbody>
+              <tfoot class="border-top">
+                <tr>
+                  <th class="text-end">Total:</th>
+                  <th class="text-end text-success fs-5">{{ formatMoney .Order.TotalAmount }}</th>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+            <a href="/account/orders" class="btn btn-outline-secondary rounded-pill px-4">
+              Back to Orders
+            </a>
+            <button onclick="window.print()" class="btn btn-light rounded-pill px-4 border">
+              <i class="bi bi-printer me-1"></i> Print Receipt
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{{ end }}

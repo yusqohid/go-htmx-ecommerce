@@ -13,18 +13,20 @@ import (
 	"github.com/yusqohid/go-htmx-ecommerce/internal/config"
 	"github.com/yusqohid/go-htmx-ecommerce/internal/database"
 	"github.com/yusqohid/go-htmx-ecommerce/internal/domain"
+	"github.com/yusqohid/go-htmx-ecommerce/internal/order"
 	"github.com/yusqohid/go-htmx-ecommerce/internal/product"
 	"github.com/yusqohid/go-htmx-ecommerce/web/static"
 )
 
 // RouterDeps encapsulates all dependencies needed to configure the HTTP router.
 type RouterDeps struct {
-	Config         *config.Config
-	DB             *database.DB
-	AuthService    *auth.Service
-	AuthHandler    *auth.Handler
+	Config            *config.Config
+	DB                *database.DB
+	AuthService       *auth.Service
+	AuthHandler       *auth.Handler
 	ProductHandler    *product.Handler
 	StorefrontHandler *product.StorefrontHandler
+	OrderHandler      *order.Handler
 }
 
 // NewRouter sets up the Chi HTTP router with base middlewares, static files, auth, and routes.
@@ -88,6 +90,22 @@ func NewRouter(deps RouterDeps) http.Handler {
 		r.Get("/", deps.StorefrontHandler.Home)
 		r.Get("/products", deps.StorefrontHandler.Catalog)
 		r.Get("/products/{slug}", deps.StorefrontHandler.ProductDetail)
+	}
+
+	// Order & Checkout routes
+	if deps.OrderHandler != nil {
+		// Checkout flow requires customer authentication
+		r.Group(func(authRouter chi.Router) {
+			authRouter.Use(auth.RequireAuth("/login"))
+			authRouter.Get("/checkout/{productID}", deps.OrderHandler.CheckoutPage)
+			authRouter.Post("/checkout/{productID}", deps.OrderHandler.ProcessCheckout)
+		})
+
+		r.Get("/orders/{reference}/success", deps.OrderHandler.OrderSuccess)
+
+		// Sandbox Mock Gateway Routes (accessible in development / when mock provider enabled)
+		r.Get("/mock-checkout", deps.OrderHandler.MockCheckoutPage)
+		r.Post("/mock-checkout/simulate", deps.OrderHandler.MockSimulatePayment)
 	}
 
 	// Protected Admin Dashboard & Product Management

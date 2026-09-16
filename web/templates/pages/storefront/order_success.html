@@ -1,0 +1,93 @@
+{{ define "content" }}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-8 col-lg-6">
+
+      <div class="card border-light shadow-sm p-4 p-md-5 rounded-4 text-center mb-4">
+        {{ if eq .Order.Status "paid" }}
+          <div class="mb-3">
+            <i class="bi bi-check-circle-fill text-success" style="font-size: 4rem;"></i>
+          </div>
+          <h2 class="fw-bold mb-2">Payment Successful!</h2>
+          <p class="text-muted mb-4">
+            Thank you for your purchase. Your payment has been confirmed and verified by our system.
+          </p>
+        {{ else if eq .Order.Status "pending" }}
+          <div class="mb-3">
+            <i class="bi bi-hourglass-split text-warning" style="font-size: 4rem;"></i>
+          </div>
+          <h2 class="fw-bold mb-2">Awaiting Payment Confirmation</h2>
+          <p class="text-muted mb-4">
+            Your order has been registered. We are waiting for payment verification from the payment gateway.
+          </p>
+        {{ else }}
+          <div class="mb-3">
+            <i class="bi bi-x-circle-fill text-danger" style="font-size: 4rem;"></i>
+          </div>
+          <h2 class="fw-bold mb-2">Payment {{ upper (printf "%s" .Order.Status) }}</h2>
+          <p class="text-muted mb-4">
+            This transaction was not completed successfully. If you were charged, please contact customer support.
+          </p>
+        {{ end }}
+
+        <!-- Order Information Box -->
+        <div class="p-3 bg-light rounded-3 text-start mb-4">
+          <div class="d-flex justify-content-between mb-2 small text-muted">
+            <span>Order Reference:</span>
+            <strong class="font-monospace text-dark">{{ .Order.Reference }}</strong>
+          </div>
+          <div class="d-flex justify-content-between mb-2 small text-muted">
+            <span>Status:</span>
+            <span class="badge {{ if eq .Order.Status "paid" }}bg-success{{ else if eq .Order.Status "pending" }}bg-warning text-dark{{ else }}bg-danger{{ end }}">
+              {{ upper (printf "%s" .Order.Status) }}
+            </span>
+          </div>
+          <div class="d-flex justify-content-between mb-2 small text-muted">
+            <span>Date Placed:</span>
+            <span class="text-dark">{{ formatDate .Order.CreatedAt }}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2 small text-muted">
+            <span>Payment Provider:</span>
+            <span class="text-dark">{{ upper .Order.PaymentProvider }}</span>
+          </div>
+          <div class="border-top pt-2 mt-2 d-flex justify-content-between">
+            <strong class="text-dark">Total Paid:</strong>
+            <strong class="text-success fs-5">{{ formatMoney .Order.TotalAmount }}</strong>
+          </div>
+        </div>
+
+        <!-- Purchased Line Items -->
+        <div class="text-start mb-4">
+          <h6 class="fw-bold text-dark mb-2">Purchased Items:</h6>
+          <ul class="list-group list-group-flush rounded-3 border">
+            {{ range .Order.Items }}
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <span class="fw-medium text-dark">{{ .ProductName }}</span>
+                <span class="text-muted small">{{ formatMoney .Price }}</span>
+              </li>
+            {{ end }}
+          </ul>
+        </div>
+
+        <!-- Action Links -->
+        <div class="d-flex flex-column gap-2">
+          {{ if eq .Order.Status "paid" }}
+            <a href="/products" class="btn btn-success btn-lg rounded-pill fw-bold shadow-sm">
+              <i class="bi bi-box-seam me-1"></i> Continue Shopping
+            </a>
+          {{ else if eq .Order.Status "pending" }}
+            <button onclick="window.location.reload()" class="btn btn-warning btn-lg rounded-pill fw-bold">
+              <i class="bi bi-arrow-clockwise me-1"></i> Check Status Again
+            </button>
+          {{ else }}
+            <a href="/products" class="btn btn-outline-secondary rounded-pill">
+              Return to Catalog
+            </a>
+          {{ end }}
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{{ end }}

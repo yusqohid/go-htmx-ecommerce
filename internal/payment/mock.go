@@ -52,9 +52,14 @@ func (p *MockProvider) VerifyWebhook(r *http.Request) (*domain.WebhookEvent, err
 		return nil, fmt.Errorf("invalid mock webhook payload: %w", err)
 	}
 
-	status := domain.StatusPaid
-	if payload.Status == "failed" {
+	var status domain.OrderStatus
+	switch payload.Status {
+	case "paid":
+		status = domain.StatusPaid
+	case "failed":
 		status = domain.StatusFailed
+	default:
+		return nil, fmt.Errorf("unsupported mock webhook status: %q", payload.Status)
 	}
 
 	return &domain.WebhookEvent{

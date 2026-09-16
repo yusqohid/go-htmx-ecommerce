@@ -148,20 +148,22 @@ func (p *LynkProvider) VerifyWebhook(r *http.Request) (*domain.WebhookEvent, err
 		return nil, fmt.Errorf("failed to read webhook body: %w", err)
 	}
 
-	// Validate HMAC signature if secret is configured
-	if p.webhookSecret != "" {
-		signature := r.Header.Get("X-Lynk-Signature")
-		if signature == "" {
-			return nil, errors.New("missing X-Lynk-Signature header")
-		}
+	// Webhook secret is mandatory — reject requests if not configured.
+	if p.webhookSecret == "" {
+		return nil, errors.New("webhook secret is not configured; cannot verify webhook authenticity")
+	}
 
-		mac := hmac.New(sha256.New, []byte(p.webhookSecret))
-		mac.Write(body)
-		expectedSignature := hex.EncodeToString(mac.Sum(nil))
+	signature := r.Header.Get("X-Lynk-Signature")
+	if signature == "" {
+		return nil, errors.New("missing X-Lynk-Signature header")
+	}
 
-		if !hmac.Equal([]byte(signature), []byte(expectedSignature)) {
-			return nil, errors.New("invalid webhook signature")
-		}
+	mac := hmac.New(sha256.New, []byte(p.webhookSecret))
+	mac.Write(body)
+	expectedSignature := hex.EncodeToString(mac.Sum(nil))
+
+	if !hmac.Equal([]byte(signature), []byte(expectedSignature)) {
+		return nil, errors.New("invalid webhook signature")
 	}
 
 	var payload struct {

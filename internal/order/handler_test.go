@@ -134,8 +134,10 @@ func TestMockSimulatePayment(t *testing.T) {
 	form.Set("ref", ord.Reference)
 	form.Set("status", "paid")
 
+	user := &domain.User{ID: 10, Email: "customer@example.com"}
 	req := httptest.NewRequest(http.MethodPost, "/mock-checkout/simulate", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req = req.WithContext(auth.WithUser(req.Context(), user))
 	rec := httptest.NewRecorder()
 
 	r.ServeHTTP(rec, req)
@@ -153,5 +155,113 @@ func TestMockSimulatePayment(t *testing.T) {
 	updated, _ := orderRepo.FindByReference(ctx, ord.Reference)
 	if updated.Status != domain.StatusPaid {
 		t.Errorf("expected order status paid, got %s", updated.Status)
+	}
+}
+
+func TestMockSimulatePayment_ForbiddenForOtherUser(t *testing.T) {
+	_, _, orderRepo, handler := setupOrderHandlerTest(t)
+	ctx := context.Background()
+
+	ord := &domain.Order{
+		Reference:   "ORD-SIM-02",
+		CustomerID:  10,
+		Status:      domain.StatusPending,
+		TotalAmount: 75000,
+	}
+	_ = orderRepo.Create(ctx, ord)
+
+	r := chi.NewRouter()
+	r.Post("/mock-checkout/simulate", handler.MockSimulatePayment)
+
+	form := url.Values{}
+	form.Set("ref", ord.Reference)
+	form.Set("status", "paid")
+
+	otherUser := &domain.User{ID: 99, Email: "attacker@example.com"}
+	req := httptest.NewRequest(http.MethodPost, "/mock-checkout/simulate", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req = req.WithContext(auth.WithUser(req.Context(), otherUser))
+	rec := httptest.NewRecorder()
+
+	r.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("expected 403 Forbidden, got %d", rec.Code)
+	}
+}
+
+func TestMockSimulatePayment_InvalidStatus(t *testing.T) {
+	_, _, orderRepo, handler := setupOrderHandlerTest(t)
+	ctx := context.Background()
+
+	ord := &domain.Order{
+		Reference:   "ORD-SIM-03",
+		CustomerID:  10,
+		Status:      domain.StatusPending,
+		TotalAmount: 75000,
+	}
+	_ = orderRepo.Create(ctx, ord)
+
+	r := chi.NewRouter()
+	r.Post("/mock-checkout/simulate", handler.MockSimulatePayment)
+
+	form := url.Values{}
+	form.Set("ref", ord.Reference)
+	form.Set("status", "random_malicious_status")
+
+	user := &domain.User{ID: 10, Email: "customer@example.com"}
+	req := httptest.NewRequest(http.MethodPost, "/mock-checkout/simulate", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req = req.WithContext(auth.WithUser(req.Context(), user))
+	rec := httptest.NewRecorder()
+
+	r.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 Bad Request, got %d", rec.Code)
+	}
+}
+
+func TestOrderSuccess_OwnershipEnforced(t *testing.T) {
+	_, _, orderRepo, handler := setupOrderHandlerTest(t)
+	ctx := context.Background()
+
+	ord := &domain.Order{
+		Reference:   "ORD-SUCC-01",
+		CustomerID:  10,
+		Status:      domain.StatusPaid,
+		TotalAmount: 75000,
+	}
+	_ = orderRepo.Create(ctx, ord)
+
+	r := chi.NewRouter()
+	r.Get("/orders/{reference}/success", handler.OrderSuccess)
+
+	// 1. Unauthenticated -> redirect to login
+	reqUnauth := httptest.NewRequest(http.MethodGet, "/orders/ORD-SUCC-01/success", nil)
+	recUnauth := httptest.NewRecorder()
+	r.ServeHTTP(recUnauth, reqUnauth)
+	if recUnauth.Code != http.StatusSeeOther {
+		t.Errorf("unauth: expected 303 redirect, got %d", recUnauth.Code)
+	}
+
+	// 2. Authenticated but different customer -> 403 Forbidden
+	attacker := &domain.User{ID: 99, Email: "attacker@example.com"}
+	reqAttacker := httptest.NewRequest(http.MethodGet, "/orders/ORD-SUCC-01/success", nil)
+	reqAttacker = reqAttacker.WithContext(auth.WithUser(reqAttacker.Context(), attacker))
+	recAttacker := httptest.NewRecorder()
+	r.ServeHTTP(recAttacker, reqAttacker)
+	if recAttacker.Code != http.StatusForbidden {
+		t.Errorf("other user: expected 403 Forbidden, got %d", recAttacker.Code)
+	}
+
+	// 3. Legitimate owner -> 200 OK
+	owner := &domain.User{ID: 10, Email: "owner@example.com"}
+	reqOwner := httptest.NewRequest(http.MethodGet, "/orders/ORD-SUCC-01/success", nil)
+	reqOwner = reqOwner.WithContext(auth.WithUser(reqOwner.Context(), owner))
+	recOwner := httptest.NewRecorder()
+	r.ServeHTTP(recOwner, reqOwner)
+	if recOwner.Code != http.StatusOK {
+		t.Errorf("owner: expected 200 OK, got %d", recOwner.Code)
 	}
 }

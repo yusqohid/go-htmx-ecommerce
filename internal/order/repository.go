@@ -199,9 +199,10 @@ func (r *PostgresOrderRepository) ListByCustomerID(ctx context.Context, customer
 
 	for i := range orders {
 		items, err := r.findItemsByOrderID(ctx, orders[i].ID)
-		if err == nil {
-			orders[i].Items = items
+		if err != nil {
+			return nil, fmt.Errorf("failed to load items for order %d: %w", orders[i].ID, err)
 		}
+		orders[i].Items = items
 	}
 
 	return orders, nil
@@ -256,9 +257,10 @@ func (r *PostgresOrderRepository) ListAll(ctx context.Context, limit, offset int
 
 	for i := range orders {
 		items, err := r.findItemsByOrderID(ctx, orders[i].ID)
-		if err == nil {
-			orders[i].Items = items
+		if err != nil {
+			return nil, 0, fmt.Errorf("failed to load items for order %d: %w", orders[i].ID, err)
 		}
+		orders[i].Items = items
 	}
 
 	return orders, total, nil

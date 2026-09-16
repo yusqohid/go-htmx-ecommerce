@@ -103,12 +103,17 @@ func (h *Handler) ProcessCheckout(w http.ResponseWriter, r *http.Request) {
 		ProductID: productID,
 	})
 	if err != nil {
-		product, _ := h.productRepo.FindByID(r.Context(), productID)
 		errMsg := "Unable to process order. Please try again."
 		if errors.Is(err, ErrAlreadyPurchased) {
 			errMsg = "You have already purchased this digital product."
 		} else if errors.Is(err, ErrProductNotAvailable) {
 			errMsg = "This product is currently unavailable."
+		}
+
+		product, fetchErr := h.productRepo.FindByID(r.Context(), productID)
+		if fetchErr != nil {
+			http.Redirect(w, r, "/products", http.StatusSeeOther)
+			return
 		}
 
 		_ = h.view.Render(w, "public", "storefront/checkout", map[string]any{
@@ -129,11 +134,22 @@ func (h *Handler) ProcessCheckout(w http.ResponseWriter, r *http.Request) {
 // OrderSuccess renders order summary and status details after checkout redirection.
 func (h *Handler) OrderSuccess(w http.ResponseWriter, r *http.Request) {
 	user := auth.UserFromContext(r.Context())
+	if user == nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
 	ref := chi.URLParam(r, "reference")
 
 	order, err := h.orderService.GetOrderByReference(r.Context(), ref)
 	if err != nil {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+
+	// Ownership check: only the order's customer may view the receipt.
+	if order.CustomerID != user.ID {
+		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
 	}
 
@@ -146,6 +162,12 @@ func (h *Handler) OrderSuccess(w http.ResponseWriter, r *http.Request) {
 
 // MockCheckoutPage displays the development simulation payment screen.
 func (h *Handler) MockCheckoutPage(w http.ResponseWriter, r *http.Request) {
+	user := auth.UserFromContext(r.Context())
+	if user == nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
 	ref := r.URL.Query().Get("ref")
 	if ref == "" {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
@@ -158,6 +180,12 @@ func (h *Handler) MockCheckoutPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Ownership check: only the order's customer may access the sandbox.
+	if order.CustomerID != user.ID {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+
 	_ = h.view.Render(w, "public", "storefront/mock_checkout", map[string]any{
 		"Title": "Mock Sandbox Payment Gateway",
 		"Order": order,
@@ -166,6 +194,12 @@ func (h *Handler) MockCheckoutPage(w http.ResponseWriter, r *http.Request) {
 
 // MockSimulatePayment processes the simulated payment action in development mode.
 func (h *Handler) MockSimulatePayment(w http.ResponseWriter, r *http.Request) {
+	user := auth.UserFromContext(r.Context())
+	if user == nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Invalid form data", http.StatusBadRequest)
 		return
@@ -180,9 +214,21 @@ func (h *Handler) MockSimulatePayment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	status := domain.StatusPaid
-	if simulatedStatus == "failed" {
+	// Ownership check: only the order's customer may simulate payment.
+	if order.CustomerID != user.ID {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+
+	var status domain.OrderStatus
+	switch simulatedStatus {
+	case "paid":
+		status = domain.StatusPaid
+	case "failed":
 		status = domain.StatusFailed
+	default:
+		http.Error(w, "Invalid status value. Must be 'paid' or 'failed'.", http.StatusBadRequest)
+		return
 	}
 
 	paymentRef := fmt.Sprintf("MOCK-TX-%d", order.ID)

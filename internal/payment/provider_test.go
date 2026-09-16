@@ -183,4 +183,30 @@ func TestLynkProvider_VerifyWebhook(t *testing.T) {
 	if errBad == nil {
 		t.Error("expected error with invalid signature, got nil")
 	}
+
+	// Test missing webhook secret configured on provider
+	providerNoSecret := payment.NewLynkProvider("key", "", "https://api.lynk.id", "http://localhost:8080")
+	reqNoSecret := httptest.NewRequest(http.MethodPost, "/webhooks/lynk", bytes.NewReader(rawJSON))
+	reqNoSecret.Header.Set("X-Lynk-Signature", signature)
+	_, errNoSecret := providerNoSecret.VerifyWebhook(reqNoSecret)
+	if errNoSecret == nil {
+		t.Error("expected error when webhook secret is empty, got nil")
+	}
+}
+
+func TestMockProvider_VerifyWebhook_RejectsUnsupportedStatus(t *testing.T) {
+	provider := payment.NewMockProvider("http://localhost:8080")
+
+	payload := map[string]string{
+		"event_id":        "evt-invalid",
+		"order_reference": "ORD-INVALID",
+		"status":          "something_unsupported",
+	}
+	body, _ := json.Marshal(payload)
+
+	req := httptest.NewRequest(http.MethodPost, "/webhooks/mock", bytes.NewReader(body))
+	_, err := provider.VerifyWebhook(req)
+	if err == nil {
+		t.Fatal("expected error for unsupported mock webhook status, got nil")
+	}
 }

@@ -1,102 +1,243 @@
 {{ define "content" }}
 
-<!-- Hero Section -->
-<section class="hero-section text-center">
+<!-- 1. Dark Emerald Aurora Hero Section -->
+<section class="hero-dark-aurora">
   <div class="container">
-    <div class="hero-badge">
-      <span class="hero-badge-dot"></span>
-      <span>Curated Digital Assets &amp; Boilerplates</span>
-    </div>
-    <h1 class="hero-title mb-3">
-      Build faster with production-grade <br class="d-none d-md-inline">digital developer kits.
-    </h1>
-    <p class="hero-subtitle mb-4">
-      Instant delivery, verified file integrity, and lifetime access to high-performance templates, guides, and developer tooling.
-    </p>
-    <div class="d-flex justify-content-center gap-3">
-      <a href="/products" class="btn-primary-storefront btn-lg">
-        Explore Catalog <i class="bi bi-arrow-right ms-2"></i>
-      </a>
-      {{ if not .User }}
-        <a href="/register" class="btn-outline-storefront btn-lg">
-          Create Account
-        </a>
-      {{ end }}
+    <div class="row align-items-center g-5">
+      <!-- Left Column: High-Impact Typography & Dual CTAs -->
+      <div class="col-12 col-lg-7">
+        <div class="hero-dark-badge">
+          <span class="hero-badge-dot"></span>
+          <span>Curated Developer Kits &amp; Production Boilerplates</span>
+        </div>
+
+        <h1 class="hero-dark-title">
+          Build faster with <br class="d-none d-lg-inline">
+          <span class="gradient-text-emerald">production-grade</span> digital kits.
+        </h1>
+
+        <p class="hero-dark-subtitle">
+          Instant delivery, verified SHA-256 cryptographic integrity, and lifetime access to high-performance Go, HTMX, and cloud-native architecture boilerplates.
+        </p>
+
+        <div class="d-flex flex-wrap align-items-center gap-3">
+          <a href="/products" class="btn-primary-aurora">
+            Explore All Products <i class="bi bi-arrow-right ms-1"></i>
+          </a>
+          {{ if not .User }}
+            <a href="/register" class="btn-ghost-aurora">
+              <i class="bi bi-person-plus me-1"></i> Create Free Account
+            </a>
+          {{ else }}
+            <a href="/account/orders" class="btn-ghost-aurora">
+              <i class="bi bi-bag-check me-1"></i> View Purchased Assets
+            </a>
+          {{ end }}
+        </div>
+      </div>
+
+      <!-- Right Column: Interactive Developer Terminal Mockup -->
+      <div class="col-12 col-lg-5">
+        <div class="terminal-window">
+          <div class="terminal-header">
+            <div class="terminal-dots">
+              <span class="terminal-dot terminal-dot-red"></span>
+              <span class="terminal-dot terminal-dot-yellow"></span>
+              <span class="terminal-dot terminal-dot-green"></span>
+            </div>
+            <span class="terminal-title">sellora-cli — zsh</span>
+          </div>
+          <div class="terminal-body">
+            <div class="terminal-line">
+              <span class="terminal-prompt">$</span>
+              <span class="terminal-cmd">sellora pull</span>
+              <span class="terminal-flag">starter-kit --verified</span>
+            </div>
+            <div class="terminal-line terminal-muted">
+              <span>[1/3] Resolving cryptographic manifest...</span>
+            </div>
+            <div class="terminal-line">
+              <i class="bi bi-check-circle-fill terminal-success me-1"></i>
+              <span>SHA-256: </span>
+              <span class="terminal-badge-ok">e3b0c442... [VERIFIED]</span>
+            </div>
+            <div class="terminal-line">
+              <i class="bi bi-shield-check terminal-success me-1"></i>
+              <span>License: Single-Vendor Commercial</span>
+            </div>
+            <div class="terminal-line">
+              <i class="bi bi-lightning-charge-fill terminal-success me-1"></i>
+              <span class="text-white fw-semibold">Instant delivery: 14.8 MB ready</span>
+            </div>
+            <div class="terminal-line mt-2">
+              <span class="terminal-prompt">&gt;</span>
+              <span class="terminal-cmd">go run ./cmd/server/main.go</span>
+              <span class="terminal-cursor"></span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <!-- Trust Strip -->
-    <div class="trust-strip">
-      <div class="trust-item">
-        <i class="bi bi-lightning-charge-fill"></i>
-        <span>Instant File Delivery</span>
-      </div>
-      <div class="trust-item">
-        <i class="bi bi-shield-check"></i>
-        <span>SHA-256 Verified Assets</span>
-      </div>
-      <div class="trust-item">
-        <i class="bi bi-arrow-repeat"></i>
-        <span>Lifetime Free Access</span>
-      </div>
-      <div class="trust-item">
-        <i class="bi bi-patch-check-fill"></i>
-        <span>Single-Vendor Tested</span>
+    <!-- Metrics & Trust Signals Counter Strip -->
+    <div class="metrics-strip">
+      <div class="row g-3">
+        <div class="col-6 col-md-3">
+          <div class="metric-glass-card">
+            <span class="metric-value gradient-text-emerald">100%</span>
+            <span class="metric-label">Tested &amp; Maintained</span>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="metric-glass-card">
+            <span class="metric-value gradient-text-emerald">&lt; 5s</span>
+            <span class="metric-label">Fulfillment Delivery</span>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="metric-glass-card">
+            <span class="metric-value gradient-text-emerald">SHA-256</span>
+            <span class="metric-label">Cryptographic Proof</span>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="metric-glass-card">
+            <span class="metric-value gradient-text-emerald">0%</span>
+            <span class="metric-label">Framework Bloat</span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- Value Propositions / Highlights -->
-<section class="py-5 bg-white border-bottom">
+<!-- 2. Bento Grid Value Showcase -->
+<section class="bento-section">
   <div class="container">
+    <div class="text-center mb-5">
+      <span class="bento-tagline">Engineered For Production</span>
+      <h2 class="display-6 fw-bold mb-3">Built with purpose. Without the chaos.</h2>
+      <p class="text-muted mx-auto" style="max-width: 620px;">
+        Every digital kit in Sellora adheres to clean architecture principles designed for raw execution speed, maintainability, and zero cognitive overhead.
+      </p>
+    </div>
+
     <div class="row g-4">
-      <div class="col-12 col-md-4">
-        <div class="feature-highlight-card">
-          <div class="feature-icon-wrapper">
-            <i class="bi bi-lightning-charge-fill"></i>
+      <!-- Cell 1 (8 cols): Idiomatic Go + HTMX Architecture -->
+      <div class="col-12 col-lg-8">
+        <div class="bento-card">
+          <div class="bento-card-header">
+            <div class="bento-card-icon">
+              <i class="bi bi-cpu-fill"></i>
+            </div>
+            <h3 class="bento-card-title">Clean Go + HTMX Hypermedia Architecture</h3>
+            <p class="bento-card-desc mb-0">
+              Zero client bundle overhead. Write clean Go handlers, stream dynamic HTML fragments, and skip complex client-side build pipelines entirely.
+            </p>
           </div>
-          <h5 class="fw-bold mb-2">Instant Fulfillment</h5>
-          <p class="text-muted small mb-0">
-            No waiting. Once your payment is verified by our secure payment provider, your files are ready for direct download.
-          </p>
+          <div class="bento-code-preview">
+            <div><span class="bento-code-comment">// Idiomatic server-rendered hypermedia flow</span></div>
+            <div><span class="bento-code-keyword">func</span> (h *Handler) <span class="bento-code-func">CreateOrder</span>(w http.ResponseWriter, r *http.Request) {</div>
+            <div>&nbsp;&nbsp;order, err := h.service.<span class="bento-code-func">Create</span>(r.Context(), input)</div>
+            <div>&nbsp;&nbsp;<span class="bento-code-keyword">if</span> err != nil { h.view.<span class="bento-code-func">RenderError</span>(w, err); <span class="bento-code-keyword">return</span> }</div>
+            <div>&nbsp;&nbsp;h.view.<span class="bento-code-func">RenderFragment</span>(w, <span class="bento-code-string">"order_status.html"</span>, order)</div>
+            <div>}</div>
+          </div>
         </div>
       </div>
-      <div class="col-12 col-md-4">
-        <div class="feature-highlight-card">
-          <div class="feature-icon-wrapper">
-            <i class="bi bi-shield-check"></i>
+
+      <!-- Cell 2 (4 cols): Cryptographic Proof -->
+      <div class="col-12 col-lg-4">
+        <div class="bento-card">
+          <div class="bento-card-header">
+            <div class="bento-card-icon">
+              <i class="bi bi-shield-lock-fill"></i>
+            </div>
+            <h3 class="bento-card-title">Cryptographic Integrity</h3>
+            <p class="bento-card-desc mb-0">
+              Every asset release is checksummed against SHA-256 to guarantee zero tampering or corruption.
+            </p>
           </div>
-          <h5 class="fw-bold mb-2">Cryptographic Integrity</h5>
-          <p class="text-muted small mb-0">
-            Every digital asset is checked against SHA-256 checksums to ensure your files are pristine, authentic, and uncorrupted.
-          </p>
+          <div class="bento-bar-visual mt-auto">
+            <div class="d-flex justify-content-between small text-muted mb-1">
+              <span class="fw-semibold">Checksum Integrity</span>
+              <span class="text-success fw-bold">100% Match</span>
+            </div>
+            <div class="bento-bar-track mb-2">
+              <div class="bento-bar-fill-sellora" style="width: 100%;"></div>
+            </div>
+            <div class="small text-muted font-monospace text-truncate">
+              sha256: 7f83b1657ff1fc53b92dc18148a1d65b...
+            </div>
+          </div>
         </div>
       </div>
-      <div class="col-12 col-md-4">
-        <div class="feature-highlight-card">
-          <div class="feature-icon-wrapper">
-            <i class="bi bi-patch-check-fill"></i>
+
+      <!-- Cell 3 (4 cols): Single-Vendor Curated -->
+      <div class="col-12 col-lg-4">
+        <div class="bento-card">
+          <div class="bento-card-header">
+            <div class="bento-card-icon">
+              <i class="bi bi-patch-check-fill"></i>
+            </div>
+            <h3 class="bento-card-title">Single-Vendor Curated</h3>
+            <p class="bento-card-desc mb-0">
+              No anonymous 3rd-party marketplace uploads. Every boilerplate is authored, battle-tested, and supported directly.
+            </p>
           </div>
-          <h5 class="fw-bold mb-2">Curated Single-Vendor</h5>
-          <p class="text-muted small mb-0">
-            No bloated third-party marketplaces. Every product in Sellora is authored, maintained, and backed directly by us.
-          </p>
+          <div class="bento-bar-visual text-center py-3 mt-auto">
+            <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill fw-semibold">
+              <i class="bi bi-award-fill me-1"></i> 100% Direct Author Backed
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cell 4 (8 cols): Zero Bloatware Guarantee -->
+      <div class="col-12 col-lg-8">
+        <div class="bento-card">
+          <div class="bento-card-header">
+            <div class="bento-card-icon">
+              <i class="bi bi-speedometer"></i>
+            </div>
+            <h3 class="bento-card-title">Zero Bloatware Guarantee</h3>
+            <p class="bento-card-desc mb-0">
+              No fragile dependency trees or massive JavaScript bundles. Pure Go binary, clean CSS3, and sub-10ms response times.
+            </p>
+          </div>
+          <div class="bento-bar-visual mt-auto">
+            <div class="d-flex justify-content-between small mb-1">
+              <span class="fw-semibold text-dark"><i class="bi bi-lightning-charge-fill text-success me-1"></i> Sellora Clean Monolith</span>
+              <span class="text-success fw-bold">&lt; 15 KB (Native HTML)</span>
+            </div>
+            <div class="bento-bar-track mb-3">
+              <div class="bento-bar-fill-sellora" style="width: 12%;"></div>
+            </div>
+            <div class="d-flex justify-content-between small mb-1 text-muted">
+              <span>Typical Modern JS SPA Framework</span>
+              <span>~ 2.8 MB (Hydration + Bundles)</span>
+            </div>
+            <div class="bento-bar-track">
+              <div class="bento-bar-fill-generic"></div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- Featured Products Section -->
-<section class="py-5">
-  <div class="container">
-    <div class="d-flex align-items-end justify-content-between mb-4">
+<!-- 3. Featured Products Shelf -->
+<section class="py-5 bg-white">
+  <div class="container py-3">
+    <div class="d-flex flex-column flex-md-row align-items-md-end justify-content-between mb-4 gap-2">
       <div>
-        <h2 class="fw-bold mb-1">Featured Products</h2>
-        <p class="text-muted small mb-0">Handpicked digital resources to accelerate your development.</p>
+        <span class="bento-tagline">Curated Catalog</span>
+        <h2 class="fw-bold mb-1">Featured Developer Kits</h2>
+        <p class="text-muted small mb-0">Handpicked digital resources to accelerate your production applications.</p>
       </div>
-      <a href="/products" class="text-success fw-semibold text-decoration-none small">
-        View All ({{ .TotalPublished }}) <i class="bi bi-chevron-right"></i>
+      <a href="/products" class="btn btn-sm btn-outline-success rounded-pill px-3 fw-semibold">
+        View All Products ({{ .TotalPublished }}) <i class="bi bi-chevron-right ms-1"></i>
       </a>
     </div>
 
@@ -105,7 +246,7 @@
         {{ range .FeaturedProducts }}
           <div class="col-12 col-md-6 col-lg-4">
             <div class="product-card">
-              <span class="product-card-pill">Digital Kit</span>
+              <span class="product-card-pill">Digital Asset</span>
               <div class="product-card-thumb">
                 {{ if .ThumbnailURL }}
                   <img src="{{ .ThumbnailURL }}" alt="{{ .Name }}" loading="lazy">
@@ -117,6 +258,12 @@
                 {{ end }}
               </div>
               <div class="product-card-body">
+                <div class="d-flex flex-wrap gap-1 mb-2">
+                  <span class="tech-pill tech-pill-go">Go</span>
+                  <span class="tech-pill tech-pill-htmx">HTMX</span>
+                  <span class="tech-pill tech-pill-pg">PostgreSQL</span>
+                  <span class="tech-pill tech-pill-secure"><i class="bi bi-shield-check"></i> SHA-256</span>
+                </div>
                 <h3 class="product-card-title">
                   <a href="/products/{{ .Slug }}">{{ .Name }}</a>
                 </h3>
@@ -124,7 +271,7 @@
                 <div class="product-card-footer">
                   <span class="product-price">{{ formatMoney .Price }}</span>
                   <a href="/products/{{ .Slug }}" class="btn btn-sm btn-outline-success rounded-pill px-3 fw-medium">
-                    View Details
+                    View Specs
                   </a>
                 </div>
               </div>
@@ -147,14 +294,178 @@
   </div>
 </section>
 
-<!-- Bottom CTA Section -->
-<section class="py-5 bg-light border-top">
-  <div class="container text-center py-4">
-    <h3 class="fw-bold mb-2">Looking for a specific kit or template?</h3>
-    <p class="text-muted small mb-4">Search through our full catalog or discover new releases updated regularly.</p>
-    <a href="/products" class="btn-primary-storefront">
-      Browse All Products <i class="bi bi-arrow-right ms-2"></i>
-    </a>
+<!-- 4. Comparison Matrix ("Sellora vs Generic Marketplaces") -->
+<section class="matrix-section">
+  <div class="container">
+    <div class="text-center mb-5">
+      <span class="bento-tagline">Why Single-Vendor Matters</span>
+      <h2 class="display-6 fw-bold mb-3">Sellora vs Generic Marketplaces</h2>
+      <p class="text-muted mx-auto" style="max-width: 600px;">
+        Traditional marketplaces are flooded with unmaintained scripts, hidden vulnerabilities, and bloated dependencies. Sellora provides a clean, curated alternative.
+      </p>
+    </div>
+
+    <div class="matrix-table-container">
+      <div class="table-responsive">
+        <table class="matrix-table">
+          <thead>
+            <tr>
+              <th style="width: 34%;">Evaluation Criteria</th>
+              <th class="col-sellora" style="width: 33%;"><i class="bi bi-bag-check-fill text-success me-1"></i> Sellora Digital Kits</th>
+              <th style="width: 33%;">Generic Script Marketplaces</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="fw-semibold text-dark">Security &amp; Code Integrity</td>
+              <td class="col-sellora">
+                <span class="matrix-check"><i class="bi bi-check-circle-fill"></i> SHA-256 Cryptographically Verified</span>
+              </td>
+              <td>
+                <span class="matrix-cross"><i class="bi bi-x-circle-fill"></i> Unchecked ZIP files, potential malware</span>
+              </td>
+            </tr>
+            <tr>
+              <td class="fw-semibold text-dark">Architecture &amp; Clean Code</td>
+              <td class="col-sellora">
+                <span class="matrix-check"><i class="bi bi-check-circle-fill"></i> Idiomatic Go + HTMX Monolith</span>
+              </td>
+              <td>
+                <span class="matrix-cross"><i class="bi bi-x-circle-fill"></i> Outdated PHP / spaghetti code</span>
+              </td>
+            </tr>
+            <tr>
+              <td class="fw-semibold text-dark">Dependency Overhead</td>
+              <td class="col-sellora">
+                <span class="matrix-check"><i class="bi bi-check-circle-fill"></i> Zero bloat, standard library first</span>
+              </td>
+              <td>
+                <span class="matrix-cross"><i class="bi bi-x-circle-fill"></i> 800+ fragile node_modules packages</span>
+              </td>
+            </tr>
+            <tr>
+              <td class="fw-semibold text-dark">Fulfillment Speed</td>
+              <td class="col-sellora">
+                <span class="matrix-check"><i class="bi bi-check-circle-fill"></i> Instant delivery in &lt; 5 seconds</span>
+              </td>
+              <td>
+                <span class="matrix-cross"><i class="bi bi-dash-circle-fill"></i> Manual approval or slow mirrors</span>
+              </td>
+            </tr>
+            <tr>
+              <td class="fw-semibold text-dark">Support &amp; Updates</td>
+              <td class="col-sellora">
+                <span class="matrix-check"><i class="bi bi-check-circle-fill"></i> Direct author support &amp; lifetime updates</span>
+              </td>
+              <td>
+                <span class="matrix-cross"><i class="bi bi-x-circle-fill"></i> Abandoned repos &amp; paid extra support</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 5. Interactive FAQ Accordion -->
+<section class="faq-section">
+  <div class="container">
+    <div class="text-center mb-5">
+      <span class="bento-tagline">Got Questions?</span>
+      <h2 class="display-6 fw-bold mb-3">Frequently Asked Questions</h2>
+      <p class="text-muted mx-auto" style="max-width: 580px;">
+        Everything you need to know about our digital kits, licensing, and fulfillment process.
+      </p>
+    </div>
+
+    <div class="mx-auto" style="max-width: 780px;">
+      <div class="accordion faq-accordion" id="faqAccordion">
+        <!-- Q1 -->
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqHeadingOne">
+            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faqCollapseOne" aria-expanded="true" aria-controls="faqCollapseOne">
+              How does instant digital delivery work?
+            </button>
+          </h2>
+          <div id="faqCollapseOne" class="accordion-collapse collapse show" aria-labelledby="faqHeadingOne" data-bs-parent="#faqAccordion">
+            <div class="accordion-body">
+              Once your payment is verified via our secure payment gateway, your order is automatically transitioned to <strong>paid</strong> status in under 5 seconds. You immediately receive direct download access in your customer dashboard, backed by signed download tokens.
+            </div>
+          </div>
+        </div>
+
+        <!-- Q2 -->
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqHeadingTwo">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqCollapseTwo" aria-expanded="false" aria-controls="faqCollapseTwo">
+              What does SHA-256 cryptographic verification mean?
+            </button>
+          </h2>
+          <div id="faqCollapseTwo" class="accordion-collapse collapse" aria-labelledby="faqHeadingTwo" data-bs-parent="#faqAccordion">
+            <div class="accordion-body">
+              Each product package is cryptographically hashed during publication. When you download a kit, you can run <code>sha256sum &lt;file&gt;</code> to verify that the downloaded archive is byte-for-byte identical to the original release, ensuring zero file tampering or transfer corruption.
+            </div>
+          </div>
+        </div>
+
+        <!-- Q3 -->
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqHeadingThree">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqCollapseThree" aria-expanded="false" aria-controls="faqCollapseThree">
+              Can I use these developer kits for client and commercial projects?
+            </button>
+          </h2>
+          <div id="faqCollapseThree" class="accordion-collapse collapse" aria-labelledby="faqHeadingThree" data-bs-parent="#faqAccordion">
+            <div class="accordion-body">
+              Yes! All developer kits and boilerplates sold on Sellora include full commercial rights. You can use the code to build client websites, internal enterprise tools, or commercial SaaS applications without paying recurring royalties.
+            </div>
+          </div>
+        </div>
+
+        <!-- Q4 -->
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqHeadingFour">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqCollapseFour" aria-expanded="false" aria-controls="faqCollapseFour">
+              How do I receive updates when a kit is improved?
+            </button>
+          </h2>
+          <div id="faqCollapseFour" class="accordion-collapse collapse" aria-labelledby="faqHeadingFour" data-bs-parent="#faqAccordion">
+            <div class="accordion-body">
+              All purchases come with lifetime access. Whenever an author releases a bugfix, patch, or major upgrade to a kit you purchased, the updated archive is automatically available for download in your customer dashboard at no additional charge.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 6. Dark Aurora Conversion Bottom Banner -->
+<section class="cta-dark-aurora">
+  <div class="container">
+    <div class="cta-aurora-card">
+      <div class="hero-dark-badge mb-3">
+        <i class="bi bi-rocket-takeoff-fill"></i>
+        <span>Ready to Accelerate Your Next Project?</span>
+      </div>
+      <h2 class="display-5 fw-bold text-white mb-3">
+        Ship production software in <span class="gradient-text-emerald">days, not months.</span>
+      </h2>
+      <p class="hero-dark-subtitle mx-auto mb-4">
+        Explore our curated collection of production-tested Go, HTMX, and PostgreSQL developer kits with instant delivery.
+      </p>
+      <div class="d-flex flex-wrap justify-content-center gap-3">
+        <a href="/products" class="btn-primary-aurora">
+          Browse Full Catalog <i class="bi bi-arrow-right ms-1"></i>
+        </a>
+        {{ if not .User }}
+          <a href="/register" class="btn-ghost-aurora">
+            <i class="bi bi-person-check me-1"></i> Create Free Account
+          </a>
+        {{ end }}
+      </div>
+    </div>
   </div>
 </section>
 

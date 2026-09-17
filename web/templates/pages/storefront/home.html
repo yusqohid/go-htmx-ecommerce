@@ -4,7 +4,7 @@
 <section class="hero-section text-center">
   <div class="container">
     <div class="hero-badge">
-      <i class="bi bi-stars"></i>
+      <span class="hero-badge-dot"></span>
       <span>Curated Digital Assets &amp; Boilerplates</span>
     </div>
     <h1 class="hero-title mb-3">
@@ -14,14 +14,34 @@
       Instant delivery, verified file integrity, and lifetime access to high-performance templates, guides, and developer tooling.
     </p>
     <div class="d-flex justify-content-center gap-3">
-      <a href="/products" class="btn btn-success btn-lg rounded-pill px-4 fw-semibold shadow-sm">
-        Explore Catalog <i class="bi bi-arrow-right ms-1"></i>
+      <a href="/products" class="btn-primary-storefront btn-lg">
+        Explore Catalog <i class="bi bi-arrow-right ms-2"></i>
       </a>
       {{ if not .User }}
-        <a href="/register" class="btn btn-outline-secondary btn-lg rounded-pill px-4">
+        <a href="/register" class="btn-outline-storefront btn-lg">
           Create Account
         </a>
       {{ end }}
+    </div>
+
+    <!-- Trust Strip -->
+    <div class="trust-strip">
+      <div class="trust-item">
+        <i class="bi bi-lightning-charge-fill"></i>
+        <span>Instant File Delivery</span>
+      </div>
+      <div class="trust-item">
+        <i class="bi bi-shield-check"></i>
+        <span>SHA-256 Verified Assets</span>
+      </div>
+      <div class="trust-item">
+        <i class="bi bi-arrow-repeat"></i>
+        <span>Lifetime Free Access</span>
+      </div>
+      <div class="trust-item">
+        <i class="bi bi-patch-check-fill"></i>
+        <span>Single-Vendor Tested</span>
+      </div>
     </div>
   </div>
 </section>
@@ -85,11 +105,15 @@
         {{ range .FeaturedProducts }}
           <div class="col-12 col-md-6 col-lg-4">
             <div class="product-card">
+              <span class="product-card-pill">Digital Kit</span>
               <div class="product-card-thumb">
                 {{ if .ThumbnailURL }}
-                  <img src="{{ .ThumbnailURL }}" alt="{{ .Name }}">
+                  <img src="{{ .ThumbnailURL }}" alt="{{ .Name }}" loading="lazy">
                 {{ else }}
-                  <i class="bi bi-box-seam thumb-icon"></i>
+                  <div class="thumb-placeholder">
+                    <i class="bi bi-box-seam thumb-icon"></i>
+                    <span class="small fw-medium opacity-75">Production Asset</span>
+                  </div>
                 {{ end }}
               </div>
               <div class="product-card-body">
@@ -128,8 +152,8 @@
   <div class="container text-center py-4">
     <h3 class="fw-bold mb-2">Looking for a specific kit or template?</h3>
     <p class="text-muted small mb-4">Search through our full catalog or discover new releases updated regularly.</p>
-    <a href="/products" class="btn btn-success rounded-pill px-4 fw-semibold">
-      Browse All Products <i class="bi bi-arrow-right ms-1"></i>
+    <a href="/products" class="btn-primary-storefront">
+      Browse All Products <i class="bi bi-arrow-right ms-2"></i>
     </a>
   </div>
 </section>

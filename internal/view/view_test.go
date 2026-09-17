@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/yusqohid/go-htmx-ecommerce/internal/view"
+	"github.com/yusqohid/go-htmx-ecommerce/web/templates"
 )
 
 func TestFuncMap(t *testing.T) {
@@ -77,3 +78,22 @@ func TestViewRender(t *testing.T) {
 		t.Errorf("body = %q, want %q", rec.Body.String(), expectedBody)
 	}
 }
+
+func TestRealStorefrontHomeTemplate(t *testing.T) {
+	// Import and verify actual embedded templates compile and render without error
+	v := view.New(templates.FS, false)
+	rec := httptest.NewRecorder()
+	err := v.Render(rec, "public", "storefront/home", map[string]any{
+		"Title":          "Sellora - Test",
+		"ActiveNav":      "home",
+		"TotalPublished": 3,
+		"FeaturedProducts": []any{},
+	})
+	if err != nil {
+		t.Fatalf("failed to render real storefront/home template: %v", err)
+	}
+	if rec.Code != 200 {
+		t.Fatalf("expected status 200, got %d", rec.Code)
+	}
+}
+

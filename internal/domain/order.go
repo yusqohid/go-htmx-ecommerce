@@ -55,5 +55,6 @@ type OrderRepository interface {
 	ListByCustomerID(ctx context.Context, customerID int64) ([]Order, error)
 	ListAll(ctx context.Context, limit, offset int) ([]Order, int, error)
 	UpdateStatus(ctx context.Context, id int64, status OrderStatus, paymentReference string) error
+	ProcessPaymentResult(ctx context.Context, orderID int64, status OrderStatus, paymentReference string, event *PaymentEvent) error
 	HasUserPurchasedProduct(ctx context.Context, userID, productID int64) (bool, error)
 }

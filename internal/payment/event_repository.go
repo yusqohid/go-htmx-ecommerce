@@ -25,6 +25,7 @@ func (r *PostgresPaymentEventRepository) Record(ctx context.Context, event *doma
 	query := `
 		INSERT INTO payment_events (provider, event_id, event_type, order_reference, payload, processed_at, created_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		ON CONFLICT (provider, event_id) DO NOTHING
 		RETURNING id, created_at;
 	`
 	now := time.Now().UTC()
@@ -43,6 +44,10 @@ func (r *PostgresPaymentEventRepository) Record(ctx context.Context, event *doma
 	).Scan(&event.ID, &event.CreatedAt)
 
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			// Duplicate event already recorded, ignore
+			return nil
+		}
 		return fmt.Errorf("failed to record payment event: %w", err)
 	}
 

@@ -143,14 +143,36 @@ func (s *Service) ListAllOrders(ctx context.Context, page, pageSize int) ([]doma
 	return s.orderRepo.ListAll(ctx, pageSize, offset)
 }
 
-// UpdateOrderStatus transitions an order to a new state (e.g. paid, failed, cancelled).
+// UpdateOrderStatus transitions an order to a new state with strict state machine validation.
 func (s *Service) UpdateOrderStatus(ctx context.Context, id int64, status domain.OrderStatus, paymentRef string) error {
-	switch status {
-	case domain.StatusPaid, domain.StatusFailed, domain.StatusCancelled, domain.StatusRefunded:
-		return s.orderRepo.UpdateStatus(ctx, id, status, paymentRef)
-	default:
-		return fmt.Errorf("invalid order status transition to: %s", status)
+	order, err := s.orderRepo.FindByID(ctx, id)
+	if err != nil {
+		return err
 	}
+
+	if order.Status == status {
+		return nil
+	}
+
+	switch order.Status {
+	case domain.StatusPending:
+		if status != domain.StatusPaid && status != domain.StatusFailed && status != domain.StatusCancelled {
+			return fmt.Errorf("invalid transition from pending to %s", status)
+		}
+	case domain.StatusPaid:
+		if status != domain.StatusRefunded {
+			return fmt.Errorf("%w: cannot transition paid order to %s", domain.ErrOrderAlreadyPaid, status)
+		}
+	default:
+		return fmt.Errorf("cannot transition order in terminal state %s to %s", order.Status, status)
+	}
+
+	return s.orderRepo.UpdateStatus(ctx, id, status, paymentRef)
+}
+
+// ProcessPaymentResult atomically updates order status and records the payment event.
+func (s *Service) ProcessPaymentResult(ctx context.Context, orderID int64, status domain.OrderStatus, paymentRef string, event *domain.PaymentEvent) error {
+	return s.orderRepo.ProcessPaymentResult(ctx, orderID, status, paymentRef, event)
 }
 
 // HasAccessToProduct checks whether the user owns a paid order for the given product.

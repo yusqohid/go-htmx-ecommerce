@@ -56,19 +56,30 @@ func NewRouter(deps RouterDeps) http.Handler {
 	// Health check endpoint
 	r.Get("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		dbStatus := "connected"
+		isHealthy := true
 		if deps.DB != nil {
 			ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 			defer cancel()
 			if err := deps.DB.PingContext(ctx); err != nil {
 				dbStatus = "unreachable"
+				isHealthy = false
 			}
 		} else {
 			dbStatus = "not configured"
+			isHealthy = false
 		}
 
+		status := "ok"
 		w.Header().Set("Content-Type", "application/json")
+		if !isHealthy {
+			status = "degraded"
+			w.WriteHeader(http.StatusServiceUnavailable)
+		} else {
+			w.WriteHeader(http.StatusOK)
+		}
+
 		_ = json.NewEncoder(w).Encode(map[string]any{
-			"status":   "ok",
+			"status":   status,
 			"app":      "Sellora",
 			"env":      deps.Config.AppEnv,
 			"database": dbStatus,
@@ -108,9 +119,11 @@ func NewRouter(deps RouterDeps) http.Handler {
 
 		r.Get("/orders/{reference}/success", deps.OrderHandler.OrderSuccess)
 
-		// Sandbox Mock Gateway Routes (accessible in development / when mock provider enabled)
-		r.Get("/mock-checkout", deps.OrderHandler.MockCheckoutPage)
-		r.Post("/mock-checkout/simulate", deps.OrderHandler.MockSimulatePayment)
+		// Sandbox Mock Gateway Routes (accessible in development only when mock provider enabled)
+		if deps.Config != nil && !deps.Config.IsProduction() && deps.Config.PaymentProvider == "mock" {
+			r.Get("/mock-checkout", deps.OrderHandler.MockCheckoutPage)
+			r.Post("/mock-checkout/simulate", deps.OrderHandler.MockSimulatePayment)
+		}
 	}
 
 	// Payment Provider Webhooks (LYNK.ID, Mock, etc.)

@@ -38,7 +38,7 @@ func (p *MockProvider) CreateCheckout(ctx context.Context, order *domain.Order) 
 
 // VerifyWebhook parses a mock webhook event payload.
 func (p *MockProvider) VerifyWebhook(r *http.Request) (*domain.WebhookEvent, error) {
-	body, err := io.ReadAll(r.Body)
+	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20)) // 1MB maximum limit
 	if err != nil {
 		return nil, fmt.Errorf("failed to read mock webhook body: %w", err)
 	}

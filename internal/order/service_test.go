@@ -80,6 +80,19 @@ func (m *MockOrderRepo) UpdateStatus(ctx context.Context, id int64, status domai
 	o.UpdatedAt = time.Now()
 	return nil
 }
+func (m *MockOrderRepo) ProcessPaymentResult(ctx context.Context, id int64, status domain.OrderStatus, paymentRef string, event *domain.PaymentEvent) error {
+	o, ok := m.orders[id]
+	if !ok {
+		return domain.ErrNotFound
+	}
+	if o.Status == domain.StatusPaid && status != domain.StatusRefunded && status != domain.StatusPaid {
+		return domain.ErrOrderAlreadyPaid
+	}
+	o.Status = status
+	o.PaymentReference = paymentRef
+	o.UpdatedAt = time.Now()
+	return nil
+}
 
 func (m *MockOrderRepo) HasUserPurchasedProduct(ctx context.Context, userID, productID int64) (bool, error) {
 	for _, o := range m.orders {

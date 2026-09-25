@@ -143,7 +143,7 @@ func (p *LynkProvider) CreateCheckout(ctx context.Context, order *domain.Order) 
 
 // VerifyWebhook validates and parses an incoming webhook event from LYNK.ID.
 func (p *LynkProvider) VerifyWebhook(r *http.Request) (*domain.WebhookEvent, error) {
-	body, err := io.ReadAll(r.Body)
+	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20)) // 1MB maximum limit
 	if err != nil {
 		return nil, fmt.Errorf("failed to read webhook body: %w", err)
 	}
@@ -205,6 +205,7 @@ func (p *LynkProvider) VerifyWebhook(r *http.Request) (*domain.WebhookEvent, err
 		OrderReference:   payload.Data.MerchantOrderID,
 		Status:           status,
 		PaymentReference: payload.Data.TransactionID,
+		Amount:           payload.Data.Amount,
 		RawPayload:       body,
 	}, nil
 }

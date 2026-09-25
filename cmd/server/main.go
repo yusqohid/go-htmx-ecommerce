@@ -95,7 +95,7 @@ func main() {
 		paymentHandler = payment.NewHandler(paymentService)
 
 		downloadHandler = product.NewDownloadHandler(fileRepo, orderService, storageManager)
-		customerHandler = customer.NewHandler(orderService, fileRepo, viewRenderer)
+		customerHandler = customer.NewHandler(orderService, fileRepo, authService, viewRenderer)
 		adminOrderHandler = order.NewAdminHandler(orderService, viewRenderer)
 	}
 	authHandler := auth.NewHandler(authService, viewRenderer, cfg.IsProduction())
@@ -122,8 +122,36 @@ func main() {
 		WriteTimeout: 15 * time.Second,
 		IdleTimeout:  60 * time.Second,
 	}
+	// 6. Background worker for cleaning up expired sessions
+	workerCtx, stopWorker := context.WithCancel(context.Background())
+	defer stopWorker()
 
-	// 6. Start HTTP server in a separate goroutine
+	go func() {
+		ticker := time.NewTicker(1 * time.Hour)
+		defer ticker.Stop()
+
+		// Run an initial cleanup on startup
+		cleanCtx, cleanCancel := context.WithTimeout(workerCtx, 15*time.Second)
+		if err := authService.CleanupExpiredSessions(cleanCtx); err != nil && !errors.Is(err, context.Canceled) {
+			log.Printf("[Worker] Initial expired session cleanup failed: %v", err)
+		}
+		cleanCancel()
+
+		for {
+			select {
+			case <-ticker.C:
+				cCtx, cCancel := context.WithTimeout(workerCtx, 15*time.Second)
+				if err := authService.CleanupExpiredSessions(cCtx); err != nil && !errors.Is(err, context.Canceled) {
+					log.Printf("[Worker] Periodic expired session cleanup failed: %v", err)
+				}
+				cCancel()
+			case <-workerCtx.Done():
+				return
+			}
+		}
+	}()
+
+	// 7. Start HTTP server in a separate goroutine
 	go func() {
 		log.Printf("Server listening on port %s (URL: %s)", cfg.AppPort, cfg.AppBaseURL)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
@@ -131,10 +159,12 @@ func main() {
 		}
 	}()
 
-	// 7. Graceful shutdown listening to interrupt signals
+	// 8. Graceful shutdown listening to interrupt signals
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
+
+	stopWorker()
 
 	log.Println("Shutting down server gracefully...")
 

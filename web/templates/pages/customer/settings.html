@@ -1,0 +1,126 @@
+{{ define "content" }}
+<div class="container py-5">
+  <div class="row">
+    <!-- Account Header -->
+    <div class="col-lg-12 mb-4">
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 border-bottom pb-4">
+        <div>
+          <div class="hero-badge mb-2">
+            <span class="hero-badge-dot"></span>
+            <span>Customer Dashboard</span>
+          </div>
+          <h1 class="h3 fw-bold text-dark mb-1">Account &amp; Security</h1>
+          <p class="text-muted mb-0">Manage your profile information and update your login credentials.</p>
+        </div>
+        <div>
+          <a href="/products" class="btn btn-outline-success rounded-pill px-4">
+            <i class="bi bi-grid me-1"></i> Browse Catalog
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Account Subnavigation Tabs -->
+    <div class="col-lg-12 mb-4">
+      <ul class="nav nav-pills gap-2">
+        <li class="nav-item">
+          <a class="nav-link text-secondary rounded-pill px-4" href="/account/orders">
+            <i class="bi bi-bag-check me-1"></i> My Orders
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link active rounded-pill px-4" href="/account/settings">
+            <i class="bi bi-person-gear me-1"></i> Account &amp; Password
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Settings Content -->
+    <div class="col-lg-5 mb-4">
+      <!-- Profile Details Card -->
+      <div class="card border rounded-4 shadow-sm bg-white p-4 h-100">
+        <div class="d-flex align-items-center gap-3 mb-4">
+          <div class="rounded-circle bg-success-subtle text-success p-3 d-flex align-items-center justify-content-center" style="width: 56px; height: 56px; font-size: 1.5rem;">
+            <i class="bi bi-person-fill"></i>
+          </div>
+          <div>
+            <h5 class="fw-bold text-dark mb-0">{{ .User.Name }}</h5>
+            <span class="badge bg-light text-secondary border text-uppercase">{{ .User.Role }}</span>
+          </div>
+        </div>
+
+        <div class="d-flex flex-column gap-3">
+          <div class="border-top pt-3">
+            <span class="text-muted small d-block">Email Address</span>
+            <span class="fw-semibold text-dark">{{ .User.Email }}</span>
+          </div>
+          <div class="border-top pt-3">
+            <span class="text-muted small d-block">Account Status</span>
+            <span class="badge bg-success-subtle text-success fw-medium">Active</span>
+          </div>
+          <div class="border-top pt-3">
+            <span class="text-muted small d-block">Member Since</span>
+            <span class="text-dark small">{{ formatDate .User.CreatedAt }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-7 mb-4">
+      <!-- Change Password Card -->
+      <div class="card border rounded-4 shadow-sm bg-white p-4">
+        <h4 class="fw-bold text-dark mb-1">Change Password</h4>
+        <p class="text-muted small mb-4">Protect your account with a strong password of at least 8 characters.</p>
+
+        <!-- Inline Status Message Container -->
+        <div id="password-alert" class="mb-3">
+          {{ if .Error }}
+            <div class="alert alert-danger rounded-3 d-flex align-items-center gap-2 mb-0">
+              <i class="bi bi-exclamation-triangle-fill"></i>
+              <div>{{ .Error }}</div>
+            </div>
+          {{ else if .Success }}
+            <div class="alert alert-success rounded-3 d-flex align-items-center gap-2 mb-0">
+              <i class="bi bi-check-circle-fill"></i>
+              <div>{{ .Success }}</div>
+            </div>
+          {{ end }}
+        </div>
+
+        <form method="POST" action="/account/settings/password" hx-post="/account/settings/password" hx-target="#password-alert" hx-swap="innerHTML">
+          <input type="hidden" name="csrf_token" value="">
+
+          <div class="mb-3">
+            <label for="current_password" class="form-label small fw-semibold">Current Password</label>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0"><i class="bi bi-key text-muted"></i></span>
+              <input type="password" class="form-control border-start-0" id="current_password" name="current_password" required autocomplete="current-password" placeholder="Enter current password">
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="new_password" class="form-label small fw-semibold">New Password</label>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0"><i class="bi bi-shield-lock text-muted"></i></span>
+              <input type="password" class="form-control border-start-0" id="new_password" name="new_password" required minlength="8" autocomplete="new-password" placeholder="Minimum 8 characters">
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label for="confirm_password" class="form-label small fw-semibold">Confirm New Password</label>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0"><i class="bi bi-shield-check text-muted"></i></span>
+              <input type="password" class="form-control border-start-0" id="confirm_password" name="confirm_password" required minlength="8" autocomplete="new-password" placeholder="Re-enter new password">
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-success rounded-pill px-4 fw-semibold">
+            <i class="bi bi-lock-fill me-1"></i> Update Password
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{{ end }}

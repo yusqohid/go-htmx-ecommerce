@@ -171,6 +171,38 @@ func (s *Service) Logout(ctx context.Context, token string) error {
 	return s.sessionRepo.DeleteByToken(ctx, token)
 }
 
+// ChangePassword verifies the user's current password and securely hashes and saves the new password.
+func (s *Service) ChangePassword(ctx context.Context, userID int64, currentPassword, newPassword string) error {
+	if len(newPassword) < 8 {
+		return fmt.Errorf("%w: new password must be at least 8 characters long", domain.ErrInvalidInput)
+	}
+
+	user, err := s.userRepo.FindByID(ctx, userID)
+	if err != nil {
+		return domain.ErrUnauthorized
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(currentPassword)); err != nil {
+		return domain.ErrUnauthorized
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(newPassword), BcryptCost)
+	if err != nil {
+		return fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	user.PasswordHash = string(hash)
+	if err := s.userRepo.Update(ctx, user); err != nil {
+		return fmt.Errorf("failed to update user password: %w", err)
+	}
+
+	return nil
+}
+
+// CleanupExpiredSessions removes all stale, expired sessions from the persistence store.
+func (s *Service) CleanupExpiredSessions(ctx context.Context) error {
+	return s.sessionRepo.DeleteExpired(ctx)
+}
 func (s *Service) createSession(ctx context.Context, userID int64) (*domain.Session, error) {
 	token, err := generateSecureToken(32)
 	if err != nil {

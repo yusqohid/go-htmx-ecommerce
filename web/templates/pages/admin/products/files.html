@@ -26,6 +26,7 @@
       <p class="text-muted small mb-4">Files are stored securely outside public web roots and are served only to verified buyers with paid orders.</p>
 
       <form method="POST" action="/admin/products/{{ .Product.ID }}/files" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="">
         <div class="mb-3">
           <label for="file" class="form-label-custom">Select Digital File <span class="text-danger">*</span></label>
           <input type="file" class="form-control-custom" id="file" name="file" required>

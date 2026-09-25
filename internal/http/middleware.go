@@ -14,6 +14,16 @@ type contextKey string
 const csrfContextKey contextKey = "sellora_csrf_token"
 const csrfCookieName = "sellora_csrf"
 
+func isSecureRequest(r *http.Request) bool {
+	if r.TLS != nil {
+		return true
+	}
+	if strings.ToLower(r.Header.Get("X-Forwarded-Proto")) == "https" {
+		return true
+	}
+	return false
+}
+
 // SecurityHeaders returns a middleware that attaches defensive HTTP headers to every response.
 func SecurityHeaders(isProduction bool) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
@@ -30,8 +40,8 @@ func SecurityHeaders(isProduction bool) func(http.Handler) http.Handler {
 			// XSS auditor configuration for legacy user agents
 			w.Header().Set("X-XSS-Protection", "0")
 
-			// Enforce HTTPS in production with Strict-Transport-Security (1 year)
-			if isProduction {
+			// Enforce HTTPS in production when connection is secure
+			if isProduction && isSecureRequest(r) {
 				w.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload")
 			}
 
@@ -75,7 +85,7 @@ func CSRF(isProduction bool) func(http.Handler) http.Handler {
 						Value:    token,
 						Path:     "/",
 						HttpOnly: false, // Accessible to client-side script for HTMX / form injection
-						Secure:   isProduction,
+						Secure:   isProduction && isSecureRequest(r),
 						SameSite: http.SameSiteLaxMode,
 					})
 				}
@@ -98,8 +108,12 @@ func CSRF(isProduction bool) func(http.Handler) http.Handler {
 				submittedToken = r.Header.Get("HX-CSRFToken")
 			}
 			if submittedToken == "" {
-				// Check form value (ParseForm parses URL and body query parameters)
-				_ = r.ParseForm()
+				contentType := r.Header.Get("Content-Type")
+				if strings.HasPrefix(contentType, "multipart/form-data") {
+					_ = r.ParseMultipartForm(32 << 20)
+				} else {
+					_ = r.ParseForm()
+				}
 				submittedToken = r.FormValue("csrf_token")
 				if submittedToken == "" {
 					submittedToken = r.FormValue("_csrf")

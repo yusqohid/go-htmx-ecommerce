@@ -31,22 +31,31 @@
   <script>
     function getCSRFToken() {
       const match = document.cookie.match(/(^|;)\s*sellora_csrf=([^;]+)/);
-      return match ? decodeURIComponent(match[2]) : "";
+      return match ? decodeURIComponent(match[2].trim()) : "";
     }
-    document.addEventListener("DOMContentLoaded", function() {
-      const token = getCSRFToken();
-      if (token) {
-        document.querySelectorAll("form").forEach(function(f) {
-          if (f.method && f.method.toUpperCase() === "POST" && !f.querySelector("input[name='csrf_token']")) {
-            const inp = document.createElement("input");
+    function attachCSRF(f) {
+      if (f && f.method && f.method.toUpperCase() === "POST") {
+        const token = getCSRFToken();
+        if (token) {
+          let inp = f.querySelector("input[name='csrf_token']");
+          if (!inp) {
+            inp = document.createElement("input");
             inp.type = "hidden";
             inp.name = "csrf_token";
-            inp.value = token;
             f.appendChild(inp);
           }
-        });
+          inp.value = token;
+        }
       }
+    }
+    document.addEventListener("DOMContentLoaded", function() {
+      document.querySelectorAll("form").forEach(attachCSRF);
     });
+    document.addEventListener("submit", function(evt) {
+      if (evt.target && evt.target.tagName === "FORM") {
+        attachCSRF(evt.target);
+      }
+    }, true);
     document.addEventListener("htmx:configRequest", function(evt) {
       const token = getCSRFToken();
       if (token) {

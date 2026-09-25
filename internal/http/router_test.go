@@ -56,6 +56,7 @@ func TestSecurityHeaders(t *testing.T) {
 	})
 
 	req, _ := http.NewRequest(http.MethodGet, "/healthz", nil)
+	req.Header.Set("X-Forwarded-Proto", "https")
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 

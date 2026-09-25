@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/yusqohid/go-htmx-ecommerce/internal/domain"
 )
@@ -126,13 +127,14 @@ func RequireGuest(defaultRedirect string) func(http.Handler) http.Handler {
 }
 
 // SetSessionCookie sets a secure, HTTP-only session cookie on the response.
-func SetSessionCookie(w http.ResponseWriter, token string, isProduction bool) {
+func SetSessionCookie(w http.ResponseWriter, r *http.Request, token string, isProduction bool) {
+	secure := isProduction && (r.TLS != nil || strings.ToLower(r.Header.Get("X-Forwarded-Proto")) == "https")
 	http.SetCookie(w, &http.Cookie{
 		Name:     SessionCookieName,
 		Value:    token,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   isProduction,
+		Secure:   secure,
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   int(SessionDuration.Seconds()),
 	})

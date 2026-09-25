@@ -13,6 +13,7 @@ import (
 type OrderService interface {
 	GetOrderByReference(ctx context.Context, ref string) (*domain.Order, error)
 	UpdateOrderStatus(ctx context.Context, id int64, status domain.OrderStatus, paymentRef string) error
+	ProcessPaymentResult(ctx context.Context, orderID int64, status domain.OrderStatus, paymentRef string, event *domain.PaymentEvent) error
 }
 
 // Service manages payment processing business logic, webhook verification, and idempotency.
@@ -57,12 +58,14 @@ func (s *Service) ProcessWebhook(ctx context.Context, providerName string, r *ht
 		return fmt.Errorf("order not found for reference %s: %w", event.OrderReference, err)
 	}
 
-	// Transition order status
-	if err := s.orderService.UpdateOrderStatus(ctx, ord.ID, event.Status, event.PaymentReference); err != nil {
-		return fmt.Errorf("failed to update order status: %w", err)
+	// Amount verification for paid transactions to prevent underpayment fraud
+	if event.Status == domain.StatusPaid && event.Amount > 0 {
+		if event.Amount != ord.TotalAmount {
+			return fmt.Errorf("payment amount mismatch: expected %d, got %d", ord.TotalAmount, event.Amount)
+		}
 	}
 
-	// Record payment event for future idempotency checks
+	// Prepare payment event for atomic recording
 	pe := &domain.PaymentEvent{
 		Provider:       event.Provider,
 		EventID:        event.EventID,
@@ -71,8 +74,10 @@ func (s *Service) ProcessWebhook(ctx context.Context, providerName string, r *ht
 		Payload:        event.RawPayload,
 		ProcessedAt:    time.Now().UTC(),
 	}
-	if err := s.eventRepo.Record(ctx, pe); err != nil {
-		return fmt.Errorf("failed to record payment event: %w", err)
+
+	// Atomically update order status and record payment event inside a single transaction
+	if err := s.orderService.ProcessPaymentResult(ctx, ord.ID, event.Status, event.PaymentReference, pe); err != nil {
+		return fmt.Errorf("failed to process payment transaction: %w", err)
 	}
 
 	return nil

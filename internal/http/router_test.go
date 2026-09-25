@@ -29,8 +29,8 @@ func TestHealthcheckEndpoint(t *testing.T) {
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 
-	if rr.Code != http.StatusOK {
-		t.Errorf("expected status 200, got %d", rr.Code)
+	if rr.Code != http.StatusServiceUnavailable {
+		t.Errorf("expected status 503 Service Unavailable when DB is nil, got %d", rr.Code)
 	}
 
 	var response map[string]any
@@ -38,10 +38,9 @@ func TestHealthcheckEndpoint(t *testing.T) {
 		t.Fatalf("failed to decode response json: %v", err)
 	}
 
-	if response["status"] != "ok" {
-		t.Errorf("expected status 'ok', got %v", response["status"])
+	if response["status"] != "degraded" {
+		t.Errorf("expected status 'degraded', got %v", response["status"])
 	}
-
 	if response["app"] != "Sellora" {
 		t.Errorf("expected app 'Sellora', got %v", response["app"])
 	}

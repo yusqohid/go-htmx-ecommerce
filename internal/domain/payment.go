@@ -32,6 +32,7 @@ type WebhookEvent struct {
 	OrderReference   string
 	Status           OrderStatus
 	PaymentReference string
+	Amount           int64
 	RawPayload       []byte
 }
 

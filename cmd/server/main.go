@@ -36,6 +36,9 @@ func main() {
 	// 2. Initialize database connection
 	db, err := database.New(cfg.DatabaseURL)
 	if err != nil {
+		if cfg.IsProduction() {
+			log.Fatalf("Fatal: Failed to connect to database in production: %v", err)
+		}
 		log.Printf("Warning: Failed to connect to database (%v). Server will start with degraded state.", err)
 	} else {
 		defer db.Close()

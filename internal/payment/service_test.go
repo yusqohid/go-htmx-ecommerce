@@ -18,12 +18,14 @@ type mockOrderService struct {
 	mu           sync.Mutex
 	orders       map[string]*domain.Order
 	updateCounts map[int64]int
+	eventRepo    *mockEventRepo
 }
 
-func newMockOrderService() *mockOrderService {
+func newMockOrderService(eventRepo *mockEventRepo) *mockOrderService {
 	return &mockOrderService{
 		orders:       make(map[string]*domain.Order),
 		updateCounts: make(map[int64]int),
+		eventRepo:    eventRepo,
 	}
 }
 
@@ -49,6 +51,12 @@ func (m *mockOrderService) UpdateOrderStatus(ctx context.Context, id int64, stat
 		}
 	}
 	return domain.ErrNotFound
+}
+func (m *mockOrderService) ProcessPaymentResult(ctx context.Context, id int64, status domain.OrderStatus, paymentRef string, event *domain.PaymentEvent) error {
+	if m.eventRepo != nil && event != nil {
+		_ = m.eventRepo.Record(ctx, event)
+	}
+	return m.UpdateOrderStatus(ctx, id, status, paymentRef)
 }
 
 type mockEventRepo struct {
@@ -81,7 +89,7 @@ func (m *mockEventRepo) Exists(ctx context.Context, provider, eventID string) (b
 func TestProcessWebhook_Success(t *testing.T) {
 	mockProvider := payment.NewMockProvider("http://localhost:8080")
 	eventRepo := newMockEventRepo()
-	orderSvc := newMockOrderService()
+	orderSvc := newMockOrderService(eventRepo)
 
 	orderSvc.orders["ORD-WH-01"] = &domain.Order{
 		ID:        1,
@@ -120,7 +128,7 @@ func TestProcessWebhook_Success(t *testing.T) {
 func TestProcessWebhook_Idempotency(t *testing.T) {
 	mockProvider := payment.NewMockProvider("http://localhost:8080")
 	eventRepo := newMockEventRepo()
-	orderSvc := newMockOrderService()
+	orderSvc := newMockOrderService(eventRepo)
 
 	orderSvc.orders["ORD-WH-02"] = &domain.Order{
 		ID:        2,
@@ -162,7 +170,7 @@ func TestProcessWebhook_Idempotency(t *testing.T) {
 func TestProcessWebhook_MismatchedProvider(t *testing.T) {
 	mockProvider := payment.NewMockProvider("http://localhost:8080")
 	eventRepo := newMockEventRepo()
-	orderSvc := newMockOrderService()
+	orderSvc := newMockOrderService(eventRepo)
 
 	service := payment.NewService(mockProvider, eventRepo, orderSvc)
 
@@ -176,7 +184,7 @@ func TestProcessWebhook_MismatchedProvider(t *testing.T) {
 func TestProcessWebhook_OrderNotFound(t *testing.T) {
 	mockProvider := payment.NewMockProvider("http://localhost:8080")
 	eventRepo := newMockEventRepo()
-	orderSvc := newMockOrderService()
+	orderSvc := newMockOrderService(eventRepo)
 
 	service := payment.NewService(mockProvider, eventRepo, orderSvc)
 

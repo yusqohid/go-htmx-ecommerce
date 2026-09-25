@@ -162,6 +162,10 @@ func (h *Handler) OrderSuccess(w http.ResponseWriter, r *http.Request) {
 
 // MockCheckoutPage displays the development simulation payment screen.
 func (h *Handler) MockCheckoutPage(w http.ResponseWriter, r *http.Request) {
+	if h.paymentProvider != "mock" {
+		http.Error(w, "Mock checkout disabled", http.StatusNotFound)
+		return
+	}
 	user := auth.UserFromContext(r.Context())
 	if user == nil {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
@@ -194,6 +198,10 @@ func (h *Handler) MockCheckoutPage(w http.ResponseWriter, r *http.Request) {
 
 // MockSimulatePayment processes the simulated payment action in development mode.
 func (h *Handler) MockSimulatePayment(w http.ResponseWriter, r *http.Request) {
+	if h.paymentProvider != "mock" {
+		http.Error(w, "Mock simulation disabled", http.StatusNotFound)
+		return
+	}
 	user := auth.UserFromContext(r.Context())
 	if user == nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)

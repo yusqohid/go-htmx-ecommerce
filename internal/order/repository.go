@@ -289,6 +289,83 @@ func (r *PostgresOrderRepository) UpdateStatus(ctx context.Context, id int64, st
 	return nil
 }
 
+// ProcessPaymentResult atomically updates order status and records the payment event in a single transaction.
+func (r *PostgresOrderRepository) ProcessPaymentResult(ctx context.Context, orderID int64, status domain.OrderStatus, paymentReference string, event *domain.PaymentEvent) error {
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to begin payment result transaction: %w", err)
+	}
+	defer func() {
+		_ = tx.Rollback()
+	}()
+
+	// 1. Fetch current order status with row lock
+	var currentStatus domain.OrderStatus
+	queryOrder := `SELECT status FROM orders WHERE id = $1 FOR UPDATE;`
+	if err := tx.QueryRowContext(ctx, queryOrder, orderID).Scan(&currentStatus); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return domain.ErrNotFound
+		}
+		return fmt.Errorf("failed to lock order: %w", err)
+	}
+
+	// 2. Enforce explicit order state transition rules
+	if currentStatus != status {
+		switch currentStatus {
+		case domain.StatusPending:
+			if status != domain.StatusPaid && status != domain.StatusFailed && status != domain.StatusCancelled {
+				return fmt.Errorf("invalid transition from pending to %s", status)
+			}
+		case domain.StatusPaid:
+			if status != domain.StatusRefunded {
+				return fmt.Errorf("%w: cannot transition paid order to %s", domain.ErrOrderAlreadyPaid, status)
+			}
+		default:
+			return fmt.Errorf("cannot transition order in terminal state %s to %s", currentStatus, status)
+		}
+
+		queryUpdate := `
+			UPDATE orders
+			SET status = $1, payment_reference = $2, updated_at = $3
+			WHERE id = $4;
+		`
+		if _, err := tx.ExecContext(ctx, queryUpdate, status, paymentReference, time.Now().UTC(), orderID); err != nil {
+			return fmt.Errorf("failed to update order status: %w", err)
+		}
+	}
+
+	// 3. Atomically record payment event if provided
+	if event != nil {
+		now := time.Now().UTC()
+		processedAt := event.ProcessedAt
+		if processedAt.IsZero() {
+			processedAt = now
+		}
+		queryEvent := `
+			INSERT INTO payment_events (provider, event_id, event_type, order_reference, payload, processed_at, created_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7)
+			ON CONFLICT (provider, event_id) DO NOTHING;
+		`
+		if _, err := tx.ExecContext(ctx, queryEvent,
+			event.Provider,
+			event.EventID,
+			event.EventType,
+			event.OrderReference,
+			event.Payload,
+			processedAt,
+			now,
+		); err != nil {
+			return fmt.Errorf("failed to record payment event in transaction: %w", err)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit payment result transaction: %w", err)
+	}
+
+	return nil
+}
+
 // HasUserPurchasedProduct checks if a user has a completed 'paid' order containing the specified product.
 func (r *PostgresOrderRepository) HasUserPurchasedProduct(ctx context.Context, userID, productID int64) (bool, error) {
 	query := `

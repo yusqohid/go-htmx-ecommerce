@@ -232,19 +232,25 @@ func (s *Service) DeleteFile(ctx context.Context, fileID int64) error {
 	return s.fileRepo.Delete(ctx, fileID)
 }
 
-// DeleteProduct deletes a product and all its stored files.
+// DeleteProduct deletes a product from the database first, and only cleans up stored files if DB deletion succeeded.
 func (s *Service) DeleteProduct(ctx context.Context, id int64) error {
 	product, err := s.productRepo.FindByID(ctx, id)
 	if err != nil {
 		return err
 	}
 
-	// Delete all physical files from disk
+	// 1. Delete from database first. If this product is referenced by orders (foreign key constraint),
+	// this will return an error and PREVENT deleting purchased customer files.
+	if err := s.productRepo.Delete(ctx, id); err != nil {
+		return err
+	}
+
+	// 2. Only if DB deletion succeeded, clean up physical files
 	for _, f := range product.Files {
 		_ = s.storage.Delete(f.StoragePath)
 	}
 
-	return s.productRepo.Delete(ctx, id)
+	return nil
 }
 
 // GetProduct retrieves a product by its ID.

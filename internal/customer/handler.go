@@ -2,6 +2,8 @@ package customer
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -10,7 +12,6 @@ import (
 	"github.com/yusqohid/go-htmx-ecommerce/internal/domain"
 	"github.com/yusqohid/go-htmx-ecommerce/internal/view"
 )
-
 // OrderService defines order operations needed by the customer portal.
 type OrderService interface {
 	ListCustomerOrders(ctx context.Context, customerID int64) ([]domain.Order, error)
@@ -19,10 +20,16 @@ type OrderService interface {
 	SyncPaymentStatus(ctx context.Context, orderReference string) (*domain.Order, error)
 }
 
+// AuthService defines authentication and password operations needed by the customer portal.
+type AuthService interface {
+	ChangePassword(ctx context.Context, userID int64, currentPassword, newPassword string) error
+}
+
 // Handler handles customer account dashboard and order history requests.
 type Handler struct {
 	orderService OrderService
 	fileRepo     domain.ProductFileRepository
+	authService  AuthService
 	view         *view.View
 }
 
@@ -30,15 +37,16 @@ type Handler struct {
 func NewHandler(
 	orderService OrderService,
 	fileRepo domain.ProductFileRepository,
+	authService AuthService,
 	view *view.View,
 ) *Handler {
 	return &Handler{
 		orderService: orderService,
 		fileRepo:     fileRepo,
+		authService:  authService,
 		view:         view,
 	}
 }
-
 // AccountHome redirects the customer to their order history page.
 func (h *Handler) AccountHome(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/account/orders", http.StatusSeeOther)
@@ -132,5 +140,86 @@ func (h *Handler) OrderDetail(w http.ResponseWriter, r *http.Request) {
 		"Order":        order,
 		"ProductFiles": productFiles,
 		"ActiveNav":    "orders",
+	})
+}
+// Settings renders the customer account details and password change form.
+func (h *Handler) Settings(w http.ResponseWriter, r *http.Request) {
+	user := auth.UserFromContext(r.Context())
+	if user == nil {
+		http.Redirect(w, r, "/login?redirect="+r.URL.Path, http.StatusSeeOther)
+		return
+	}
+
+	_ = h.view.Render(w, "public", "customer/settings", map[string]any{
+		"Title":     "Account Settings - Sellora",
+		"User":      user,
+		"ActiveNav": "settings",
+	})
+}
+
+// UpdatePassword processes the user's password change request.
+func (h *Handler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
+	user := auth.UserFromContext(r.Context())
+	if user == nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		h.renderPasswordResult(w, r, user, "", "Invalid form submission.")
+		return
+	}
+
+	currentPassword := r.FormValue("current_password")
+	newPassword := r.FormValue("new_password")
+	confirmPassword := r.FormValue("confirm_password")
+
+	if currentPassword == "" || newPassword == "" {
+		h.renderPasswordResult(w, r, user, "", "Current and new passwords are required.")
+		return
+	}
+
+	if newPassword != confirmPassword {
+		h.renderPasswordResult(w, r, user, "", "New passwords do not match.")
+		return
+	}
+
+	if len(newPassword) < 8 {
+		h.renderPasswordResult(w, r, user, "", "New password must be at least 8 characters long.")
+		return
+	}
+
+	if h.authService != nil {
+		if err := h.authService.ChangePassword(r.Context(), user.ID, currentPassword, newPassword); err != nil {
+			if errors.Is(err, domain.ErrUnauthorized) {
+				h.renderPasswordResult(w, r, user, "", "Current password is incorrect.")
+				return
+			}
+			h.renderPasswordResult(w, r, user, "", "Failed to update password. Please try again.")
+			return
+		}
+	}
+
+	h.renderPasswordResult(w, r, user, "Your password has been changed successfully.", "")
+}
+
+func (h *Handler) renderPasswordResult(w http.ResponseWriter, r *http.Request, user *domain.User, successMsg, errorMsg string) {
+	if r.Header.Get("HX-Request") == "true" {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		if errorMsg != "" {
+			w.WriteHeader(http.StatusUnprocessableEntity)
+			fmt.Fprintf(w, `<div class="alert alert-danger rounded-3 d-flex align-items-center gap-2 mb-0"><i class="bi bi-exclamation-triangle-fill"></i><div>%s</div></div>`, errorMsg)
+			return
+		}
+		fmt.Fprintf(w, `<div class="alert alert-success rounded-3 d-flex align-items-center gap-2 mb-0"><i class="bi bi-check-circle-fill"></i><div>%s</div></div>`, successMsg)
+		return
+	}
+
+	_ = h.view.Render(w, "public", "customer/settings", map[string]any{
+		"Title":     "Account Settings - Sellora",
+		"User":      user,
+		"ActiveNav": "settings",
+		"Success":   successMsg,
+		"Error":     errorMsg,
 	})
 }

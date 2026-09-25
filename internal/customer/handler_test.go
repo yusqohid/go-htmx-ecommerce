@@ -4,6 +4,8 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"strings"
 	"testing"
 	"testing/fstest"
 
@@ -81,12 +83,23 @@ func (m *mockFileRepo) FindByProductID(ctx context.Context, productID int64) ([]
 func (m *mockFileRepo) Delete(ctx context.Context, id int64) error {
 	return nil
 }
+type mockAuthService struct {
+	changePasswordFn func(ctx context.Context, userID int64, currentPassword, newPassword string) error
+}
 
-func setupCustomerHandlerTest(t *testing.T) (*mockOrderService, *mockFileRepo, *customer.Handler) {
+func (m *mockAuthService) ChangePassword(ctx context.Context, userID int64, currentPassword, newPassword string) error {
+	if m.changePasswordFn != nil {
+		return m.changePasswordFn(ctx, userID, currentPassword, newPassword)
+	}
+	return nil
+}
+
+func setupCustomerHandlerTest(t *testing.T) (*mockOrderService, *mockFileRepo, *mockAuthService, *customer.Handler) {
 	t.Helper()
 
 	orderSvc := &mockOrderService{}
 	fileRepo := &mockFileRepo{files: make(map[int64][]domain.ProductFile)}
+	authSvc := &mockAuthService{}
 
 	mockFS := fstest.MapFS{
 		"layouts/public.html": &fstest.MapFile{
@@ -98,17 +111,19 @@ func setupCustomerHandlerTest(t *testing.T) (*mockOrderService, *mockFileRepo, *
 		"pages/customer/order_detail.html": &fstest.MapFile{
 			Data: []byte(`{{ define "content" }}<h1>Order {{ .Order.Reference }}</h1>{{ end }}`),
 		},
+		"pages/customer/settings.html": &fstest.MapFile{
+			Data: []byte(`{{ define "content" }}<h1>Settings: {{ .User.Name }}</h1>{{ end }}`),
+		},
 	}
 
 	renderer := view.New(mockFS, false)
-	handler := customer.NewHandler(orderSvc, fileRepo, renderer)
+	handler := customer.NewHandler(orderSvc, fileRepo, authSvc, renderer)
 
-	return orderSvc, fileRepo, handler
+	return orderSvc, fileRepo, authSvc, handler
 }
 
 func TestCustomerHandler_AccountHome(t *testing.T) {
-	_, _, handler := setupCustomerHandlerTest(t)
-
+	_, _, _, handler := setupCustomerHandlerTest(t)
 	req := httptest.NewRequest(http.MethodGet, "/account", nil)
 	rec := httptest.NewRecorder()
 
@@ -123,8 +138,7 @@ func TestCustomerHandler_AccountHome(t *testing.T) {
 }
 
 func TestCustomerHandler_ListOrders(t *testing.T) {
-	orderSvc, fileRepo, handler := setupCustomerHandlerTest(t)
-
+	orderSvc, fileRepo, _, handler := setupCustomerHandlerTest(t)
 	orderSvc.orders = []domain.Order{
 		{
 			ID:         1,
@@ -170,8 +184,7 @@ func TestCustomerHandler_ListOrders(t *testing.T) {
 }
 
 func TestCustomerHandler_OrderDetail(t *testing.T) {
-	orderSvc, _, handler := setupCustomerHandlerTest(t)
-
+	orderSvc, _, _, handler := setupCustomerHandlerTest(t)
 	orderSvc.orders = []domain.Order{
 		{
 			ID:         1,
@@ -202,5 +215,110 @@ func TestCustomerHandler_OrderDetail(t *testing.T) {
 	r.ServeHTTP(recOther, reqOther)
 	if recOther.Code != http.StatusForbidden {
 		t.Errorf("other user: expected 403 Forbidden, got %d", recOther.Code)
+	}
+}
+func TestCustomerHandler_Settings(t *testing.T) {
+	_, _, _, handler := setupCustomerHandlerTest(t)
+
+	// 1. Unauthenticated -> 303 Redirect to login
+	reqUnauth := httptest.NewRequest(http.MethodGet, "/account/settings", nil)
+	recUnauth := httptest.NewRecorder()
+	handler.Settings(recUnauth, reqUnauth)
+	if recUnauth.Code != http.StatusSeeOther {
+		t.Errorf("unauthenticated: expected 303 redirect, got %d", recUnauth.Code)
+	}
+
+	// 2. Authenticated -> 200 OK
+	user := &domain.User{ID: 15, Name: "Jane Doe", Email: "jane@example.com"}
+	reqAuth := httptest.NewRequest(http.MethodGet, "/account/settings", nil)
+	reqAuth = reqAuth.WithContext(auth.WithUser(reqAuth.Context(), user))
+	recAuth := httptest.NewRecorder()
+	handler.Settings(recAuth, reqAuth)
+	if recAuth.Code != http.StatusOK {
+		t.Errorf("authenticated: expected 200 OK, got %d", recAuth.Code)
+	}
+}
+
+func TestCustomerHandler_UpdatePassword(t *testing.T) {
+	_, _, authSvc, handler := setupCustomerHandlerTest(t)
+	user := &domain.User{ID: 15, Name: "Jane Doe", Email: "jane@example.com"}
+
+	// 1. Password mismatch
+	form := url.Values{
+		"current_password": {"currentSecret"},
+		"new_password":     {"newSecret123"},
+		"confirm_password": {"differentSecret"},
+	}
+	req := httptest.NewRequest(http.MethodPost, "/account/settings/password", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("HX-Request", "true")
+	req = req.WithContext(auth.WithUser(req.Context(), user))
+	rec := httptest.NewRecorder()
+	handler.UpdatePassword(rec, req)
+	if rec.Code != http.StatusUnprocessableEntity {
+		t.Errorf("mismatch: expected 422, got %d", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), "do not match") {
+		t.Errorf("expected mismatch error message, got %s", rec.Body.String())
+	}
+
+	// 2. Password too short (<8 chars)
+	form = url.Values{
+		"current_password": {"currentSecret"},
+		"new_password":     {"short"},
+		"confirm_password": {"short"},
+	}
+	req = httptest.NewRequest(http.MethodPost, "/account/settings/password", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("HX-Request", "true")
+	req = req.WithContext(auth.WithUser(req.Context(), user))
+	rec = httptest.NewRecorder()
+	handler.UpdatePassword(rec, req)
+	if rec.Code != http.StatusUnprocessableEntity {
+		t.Errorf("short password: expected 422, got %d", rec.Code)
+	}
+
+	// 3. Wrong current password from auth service
+	authSvc.changePasswordFn = func(ctx context.Context, userID int64, currentPassword, newPassword string) error {
+		return domain.ErrUnauthorized
+	}
+	form = url.Values{
+		"current_password": {"wrongSecret"},
+		"new_password":     {"newSecureSecret123"},
+		"confirm_password": {"newSecureSecret123"},
+	}
+	req = httptest.NewRequest(http.MethodPost, "/account/settings/password", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("HX-Request", "true")
+	req = req.WithContext(auth.WithUser(req.Context(), user))
+	rec = httptest.NewRecorder()
+	handler.UpdatePassword(rec, req)
+	if rec.Code != http.StatusUnprocessableEntity {
+		t.Errorf("wrong current password: expected 422, got %d", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), "Current password is incorrect") {
+		t.Errorf("expected incorrect password message, got %s", rec.Body.String())
+	}
+
+	// 4. Success case via HTMX
+	authSvc.changePasswordFn = func(ctx context.Context, userID int64, currentPassword, newPassword string) error {
+		return nil
+	}
+	form = url.Values{
+		"current_password": {"correctSecret"},
+		"new_password":     {"newSecureSecret123"},
+		"confirm_password": {"newSecureSecret123"},
+	}
+	req = httptest.NewRequest(http.MethodPost, "/account/settings/password", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("HX-Request", "true")
+	req = req.WithContext(auth.WithUser(req.Context(), user))
+	rec = httptest.NewRecorder()
+	handler.UpdatePassword(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Errorf("success: expected 200 OK, got %d", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), "successfully") {
+		t.Errorf("expected success message, got %s", rec.Body.String())
 	}
 }

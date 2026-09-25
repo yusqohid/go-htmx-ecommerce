@@ -218,3 +218,82 @@ func TestCreateAdmin(t *testing.T) {
 		t.Errorf("expected ErrConflict for duplicate admin, got %v", err)
 	}
 }
+func TestChangePassword(t *testing.T) {
+	userRepo := NewMockUserRepository()
+	sessionRepo := NewMockSessionRepository()
+	service := auth.NewService(userRepo, sessionRepo)
+	ctx := context.Background()
+
+	user, _, err := service.RegisterCustomer(ctx, "Bob", "bob@example.com", "OldPassword123")
+	if err != nil {
+		t.Fatalf("setup registration failed: %v", err)
+	}
+
+	// 1. New password too short
+	err = service.ChangePassword(ctx, user.ID, "OldPassword123", "short")
+	if !errors.Is(err, domain.ErrInvalidInput) {
+		t.Errorf("expected ErrInvalidInput for short password, got %v", err)
+	}
+
+	// 2. Wrong current password
+	err = service.ChangePassword(ctx, user.ID, "WrongPassword123", "BrandNewPassword123")
+	if !errors.Is(err, domain.ErrUnauthorized) {
+		t.Errorf("expected ErrUnauthorized for wrong current password, got %v", err)
+	}
+
+	// 3. Success
+	err = service.ChangePassword(ctx, user.ID, "OldPassword123", "BrandNewPassword123")
+	if err != nil {
+		t.Fatalf("expected password change to succeed, got %v", err)
+	}
+
+	// 4. Old password should fail login
+	_, _, err = service.Login(ctx, "bob@example.com", "OldPassword123")
+	if !errors.Is(err, domain.ErrUnauthorized) {
+		t.Errorf("expected login with old password to fail, got %v", err)
+	}
+
+	// 5. New password should succeed login
+	loggedInUser, _, err := service.Login(ctx, "bob@example.com", "BrandNewPassword123")
+	if err != nil {
+		t.Fatalf("expected login with new password to succeed, got %v", err)
+	}
+	if loggedInUser.ID != user.ID {
+		t.Errorf("expected user ID %d, got %d", user.ID, loggedInUser.ID)
+	}
+}
+
+func TestCleanupExpiredSessions(t *testing.T) {
+	userRepo := NewMockUserRepository()
+	sessionRepo := NewMockSessionRepository()
+	service := auth.NewService(userRepo, sessionRepo)
+	ctx := context.Background()
+
+	// Add an active session
+	activeSession := &domain.Session{
+		Token:     "active-token",
+		UserID:    1,
+		ExpiresAt: time.Now().Add(1 * time.Hour),
+	}
+	_ = sessionRepo.Create(ctx, activeSession)
+
+	// Add an expired session
+	expiredSession := &domain.Session{
+		Token:     "expired-token",
+		UserID:    1,
+		ExpiresAt: time.Now().Add(-1 * time.Hour),
+	}
+	_ = sessionRepo.Create(ctx, expiredSession)
+
+	if err := service.CleanupExpiredSessions(ctx); err != nil {
+		t.Fatalf("cleanup failed: %v", err)
+	}
+
+	if _, err := sessionRepo.FindByToken(ctx, "expired-token"); !errors.Is(err, domain.ErrNotFound) {
+		t.Errorf("expected expired-token to be cleaned up, got %v", err)
+	}
+
+	if _, err := sessionRepo.FindByToken(ctx, "active-token"); err != nil {
+		t.Errorf("expected active-token to remain, got %v", err)
+	}
+}

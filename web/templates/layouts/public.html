@@ -93,6 +93,9 @@
             <a href="/account/orders" class="storefront-nav-link px-3 {{ if eq .ActiveNav "orders" }}active{{ end }}">
               <i class="bi bi-bag-check me-1"></i> My Orders
             </a>
+            <a href="/account/settings" class="storefront-nav-link px-3 {{ if eq .ActiveNav "settings" }}active{{ end }}">
+              <i class="bi bi-person-gear me-1"></i> Settings
+            </a>
             {{ if .User.IsAdmin }}
               <a href="/admin" class="btn btn-sm btn-outline-success rounded-pill px-3">
                 <i class="bi bi-speedometer2 me-1"></i> Admin Panel

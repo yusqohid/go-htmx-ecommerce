@@ -149,9 +149,10 @@ func NewRouter(deps RouterDeps) http.Handler {
 			cust.Get("/account", deps.CustomerHandler.AccountHome)
 			cust.Get("/account/orders", deps.CustomerHandler.ListOrders)
 			cust.Get("/account/orders/{id}", deps.CustomerHandler.OrderDetail)
+			cust.Get("/account/settings", deps.CustomerHandler.Settings)
+			cust.Post("/account/settings/password", deps.CustomerHandler.UpdatePassword)
 		})
 	}
-
 	// Protected Admin Dashboard & Product Management
 	if deps.ProductHandler != nil {
 		r.Group(func(admin chi.Router) {

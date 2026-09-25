@@ -85,7 +85,11 @@ func main() {
 
 		orderRepo := order.NewOrderRepository(db.DB)
 		orderService := order.NewService(orderRepo, productRepo, paymentProvider)
-		orderHandler = order.NewHandler(orderService, productRepo, viewRenderer, paymentProvider.Name())
+		snapScriptURL := "https://app.sandbox.midtrans.com/snap/snap.js"
+		if cfg.MidtransIsProduction {
+			snapScriptURL = "https://app.midtrans.com/snap/snap.js"
+		}
+		orderHandler = order.NewHandler(orderService, productRepo, viewRenderer, paymentProvider.Name(), cfg.MidtransClientKey, snapScriptURL)
 
 		paymentService := payment.NewService(paymentProvider, paymentEventRepo, orderService)
 		paymentHandler = payment.NewHandler(paymentService)

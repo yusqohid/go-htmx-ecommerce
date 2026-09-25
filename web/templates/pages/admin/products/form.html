@@ -24,6 +24,7 @@
       <h5 class="card-title mb-4">Product Details</h5>
 
       <form method="POST" action="{{ if .IsEdit }}/admin/products/{{ .Product.ID }}{{ else }}/admin/products{{ end }}">
+        <input type="hidden" name="csrf_token" value="">
         <!-- Product Name -->
         <div class="mb-3">
           <label for="name" class="form-label-custom">Product Title <span class="text-danger">*</span></label>

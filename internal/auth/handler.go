@@ -70,7 +70,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	SetSessionCookie(w, session.Token, h.isProduction)
+	SetSessionCookie(w, r, session.Token, h.isProduction)
 
 	// Determine redirection target
 	if user.IsAdmin() {
@@ -146,7 +146,7 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	SetSessionCookie(w, session.Token, h.isProduction)
+	SetSessionCookie(w, r, session.Token, h.isProduction)
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 

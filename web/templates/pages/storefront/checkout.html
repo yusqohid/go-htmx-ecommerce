@@ -84,6 +84,7 @@
 
           <!-- Checkout Form Submit -->
           <form method="POST" action="/checkout/{{ .Product.ID }}">
+            <input type="hidden" name="csrf_token" value="">
             <button type="submit" class="btn btn-success btn-lg w-100 rounded-pill py-3 fw-bold shadow-sm mb-3">
               <i class="bi bi-lock-fill me-1"></i> Proceed to Secure Payment
             </button>

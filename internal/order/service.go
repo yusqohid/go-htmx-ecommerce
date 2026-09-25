@@ -174,6 +174,43 @@ func (s *Service) UpdateOrderStatus(ctx context.Context, id int64, status domain
 func (s *Service) ProcessPaymentResult(ctx context.Context, orderID int64, status domain.OrderStatus, paymentRef string, event *domain.PaymentEvent) error {
 	return s.orderRepo.ProcessPaymentResult(ctx, orderID, status, paymentRef, event)
 }
+// SyncPaymentStatus queries the payment provider directly to synchronize order status if pending.
+func (s *Service) SyncPaymentStatus(ctx context.Context, orderReference string) (*domain.Order, error) {
+	ord, err := s.orderRepo.FindByReference(ctx, orderReference)
+	if err != nil {
+		return nil, err
+	}
+
+	if ord.Status == domain.StatusPaid || ord.Status == domain.StatusRefunded {
+		return ord, nil
+	}
+
+	event, err := s.paymentProvider.CheckStatus(ctx, orderReference)
+	if err != nil || event == nil {
+		return ord, nil
+	}
+
+	if event.Status == domain.StatusPaid && event.Amount > 0 {
+		if event.Amount != ord.TotalAmount {
+			return ord, fmt.Errorf("payment amount mismatch: expected %d, got %d", ord.TotalAmount, event.Amount)
+		}
+	}
+
+	pe := &domain.PaymentEvent{
+		Provider:       event.Provider,
+		EventID:        event.EventID,
+		EventType:      event.EventType,
+		OrderReference: event.OrderReference,
+		Payload:        event.RawPayload,
+		ProcessedAt:    time.Now().UTC(),
+	}
+
+	if err := s.orderRepo.ProcessPaymentResult(ctx, ord.ID, event.Status, event.PaymentReference, pe); err != nil {
+		return ord, fmt.Errorf("failed to process payment sync: %w", err)
+	}
+
+	return s.orderRepo.FindByReference(ctx, orderReference)
+}
 
 // HasAccessToProduct checks whether the user owns a paid order for the given product.
 func (s *Service) HasAccessToProduct(ctx context.Context, userID, productID int64) (bool, error) {

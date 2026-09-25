@@ -166,6 +166,9 @@ func (m *MockPaymentProvider) CreateCheckout(ctx context.Context, order *domain.
 func (m *MockPaymentProvider) VerifyWebhook(r *http.Request) (*domain.WebhookEvent, error) {
 	return nil, nil
 }
+func (m *MockPaymentProvider) CheckStatus(ctx context.Context, orderReference string) (*domain.WebhookEvent, error) {
+	return nil, nil
+}
 
 func TestService_CreateOrder_Success(t *testing.T) {
 	orderRepo := NewMockOrderRepo()
@@ -321,5 +324,49 @@ func TestService_UpdateOrderStatus(t *testing.T) {
 	err = service.UpdateOrderStatus(ctx, ord.ID, "unknown_status", "")
 	if err == nil {
 		t.Error("expected error for invalid status transition, got nil")
+	}
+}
+type MockSyncPaymentProvider struct {
+	MockPaymentProvider
+	event *domain.WebhookEvent
+}
+
+func (m *MockSyncPaymentProvider) CheckStatus(ctx context.Context, orderReference string) (*domain.WebhookEvent, error) {
+	return m.event, nil
+}
+
+func TestService_SyncPaymentStatus(t *testing.T) {
+	orderRepo := NewMockOrderRepo()
+	mockProvider := &MockSyncPaymentProvider{
+		event: &domain.WebhookEvent{
+			Provider:         "midtrans",
+			EventID:          "evt-sync-100",
+			EventType:        "midtrans.settlement",
+			OrderReference:   "ORD-SYNC-TEST",
+			Status:           domain.StatusPaid,
+			PaymentReference: "TX-SYNC-100",
+			Amount:           150000,
+		},
+	}
+	service := order.NewService(orderRepo, NewMockProductRepo(), mockProvider)
+	ctx := context.Background()
+
+	ord := &domain.Order{
+		Reference:   "ORD-SYNC-TEST",
+		CustomerID:  10,
+		Status:      domain.StatusPending,
+		TotalAmount: 150000,
+	}
+	_ = orderRepo.Create(ctx, ord)
+
+	synced, err := service.SyncPaymentStatus(ctx, "ORD-SYNC-TEST")
+	if err != nil {
+		t.Fatalf("expected no error syncing status, got %v", err)
+	}
+	if synced.Status != domain.StatusPaid {
+		t.Errorf("expected synced status paid, got %s", synced.Status)
+	}
+	if synced.PaymentReference != "TX-SYNC-100" {
+		t.Errorf("expected payment ref TX-SYNC-100, got %s", synced.PaymentReference)
 	}
 }

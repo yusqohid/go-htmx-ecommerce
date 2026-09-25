@@ -216,3 +216,76 @@ func TestMidtransProvider_VerifyWebhook_TamperedSignature(t *testing.T) {
 		t.Fatal("expected error for invalid signature, got nil")
 	}
 }
+func TestMidtransProvider_CheckStatus_Success(t *testing.T) {
+	serverKey := "status-server-key"
+	orderID := "ORD-SYNC-01"
+	statusCode := "200"
+	grossAmount := "130000.00"
+
+	rawSig := orderID + statusCode + grossAmount + serverKey
+	hasher := sha512.New()
+	hasher.Write([]byte(rawSig))
+	signature := hex.EncodeToString(hasher.Sum(nil))
+
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			t.Errorf("expected GET, got %s", r.Method)
+		}
+		if r.URL.Path != "/v2/"+orderID+"/status" {
+			t.Errorf("expected path /v2/%s/status, got %s", orderID, r.URL.Path)
+		}
+
+		user, pass, ok := r.BasicAuth()
+		if !ok || user != serverKey || pass != "" {
+			t.Errorf("unexpected basic auth: user=%q, pass=%q, ok=%v", user, pass, ok)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"order_id":           orderID,
+			"status_code":        statusCode,
+			"gross_amount":       grossAmount,
+			"signature_key":      signature,
+			"transaction_status": "settlement",
+			"fraud_status":       "accept",
+			"transaction_id":     "tx-sync-123",
+		})
+	}))
+	defer mockServer.Close()
+
+	p := payment.NewMidtransProvider(serverKey, "client", "", "http://localhost:8080", false)
+	p.SetAPIBaseURL(mockServer.URL)
+
+	event, err := p.CheckStatus(context.Background(), orderID)
+	if err != nil {
+		t.Fatalf("expected no error checking status, got: %v", err)
+	}
+	if event == nil {
+		t.Fatal("expected non-nil event, got nil")
+	}
+	if event.Status != domain.StatusPaid {
+		t.Errorf("expected status paid, got %s", event.Status)
+	}
+	if event.Amount != 130000 {
+		t.Errorf("expected amount 130000, got %d", event.Amount)
+	}
+}
+
+func TestMidtransProvider_CheckStatus_NotFound(t *testing.T) {
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer mockServer.Close()
+
+	p := payment.NewMidtransProvider("server-key", "client", "", "http://localhost:8080", false)
+	p.SetAPIBaseURL(mockServer.URL)
+
+	event, err := p.CheckStatus(context.Background(), "ORD-NONEXISTENT")
+	if err != nil {
+		t.Fatalf("expected nil error on 404, got %v", err)
+	}
+	if event != nil {
+		t.Errorf("expected nil event on 404, got %v", event)
+	}
+}

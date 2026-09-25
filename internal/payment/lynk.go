@@ -209,3 +209,7 @@ func (p *LynkProvider) VerifyWebhook(r *http.Request) (*domain.WebhookEvent, err
 		RawPayload:       body,
 	}, nil
 }
+// CheckStatus returns nil for LynkProvider as Lynk relies primarily on webhook notifications.
+func (p *LynkProvider) CheckStatus(ctx context.Context, orderReference string) (*domain.WebhookEvent, error) {
+	return nil, nil
+}

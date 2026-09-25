@@ -50,6 +50,9 @@ func (m *mockOrderService) GetOrder(ctx context.Context, id int64, requestingUse
 	}
 	return nil, domain.ErrNotFound
 }
+func (m *mockOrderService) SyncPaymentStatus(ctx context.Context, orderReference string) (*domain.Order, error) {
+	return m.GetOrderByReference(ctx, orderReference)
+}
 
 type mockFileRepo struct {
 	files map[int64][]domain.ProductFile

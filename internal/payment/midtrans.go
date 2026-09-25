@@ -25,6 +25,7 @@ type MidtransProvider struct {
 	serverKey    string
 	clientKey    string
 	snapURL      string
+	apiBaseURL   string
 	appBaseURL   string
 	isProduction bool
 	httpClient   *http.Client
@@ -32,18 +33,23 @@ type MidtransProvider struct {
 
 // NewMidtransProvider constructs a new MidtransProvider.
 func NewMidtransProvider(serverKey, clientKey, snapURL, appBaseURL string, isProduction bool) *MidtransProvider {
+	apiBaseURL := "https://api.sandbox.midtrans.com"
 	if snapURL == "" {
 		if isProduction {
 			snapURL = "https://app.midtrans.com/snap/v1/transactions"
+			apiBaseURL = "https://api.midtrans.com"
 		} else {
 			snapURL = "https://app.sandbox.midtrans.com/snap/v1/transactions"
 		}
+	} else if isProduction {
+		apiBaseURL = "https://api.midtrans.com"
 	}
 
 	return &MidtransProvider{
 		serverKey:    strings.TrimSpace(serverKey),
 		clientKey:    strings.TrimSpace(clientKey),
 		snapURL:      snapURL,
+		apiBaseURL:   apiBaseURL,
 		appBaseURL:   strings.TrimRight(appBaseURL, "/"),
 		isProduction: isProduction,
 		httpClient: &http.Client{
@@ -60,6 +66,11 @@ func (p *MidtransProvider) Name() string {
 // ClientKey returns the Midtrans client key (useful for frontend scripts).
 func (p *MidtransProvider) ClientKey() string {
 	return p.clientKey
+}
+
+// SetAPIBaseURL allows overriding the base API URL (useful for test servers).
+func (p *MidtransProvider) SetAPIBaseURL(url string) {
+	p.apiBaseURL = strings.TrimRight(url, "/")
 }
 
 type midtransTransactionDetails struct {
@@ -204,7 +215,53 @@ func (p *MidtransProvider) VerifyWebhook(r *http.Request) (*domain.WebhookEvent,
 	if err := json.Unmarshal(body, &payload); err != nil {
 		return nil, fmt.Errorf("invalid midtrans webhook JSON payload: %w", err)
 	}
+	return p.processNotificationPayload(payload, body)
+}
 
+// CheckStatus queries Midtrans Transaction Status API to directly verify the current payment status.
+func (p *MidtransProvider) CheckStatus(ctx context.Context, orderReference string) (*domain.WebhookEvent, error) {
+	if strings.TrimSpace(orderReference) == "" {
+		return nil, errors.New("order reference cannot be empty")
+	}
+
+	url := fmt.Sprintf("%s/v2/%s/status", p.apiBaseURL, orderReference)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create status request: %w", err)
+	}
+
+	req.Header.Set("Accept", "application/json")
+	auth := base64.StdEncoding.EncodeToString([]byte(p.serverKey + ":"))
+	req.Header.Set("Authorization", "Basic "+auth)
+
+	resp, err := p.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to call Midtrans Status API: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, nil // Transaction not yet registered in Midtrans
+	}
+
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	if err != nil {
+		return nil, fmt.Errorf("failed to read Midtrans status response: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("midtrans Status API returned HTTP %d: %s", resp.StatusCode, string(body))
+	}
+
+	var payload midtransNotification
+	if err := json.Unmarshal(body, &payload); err != nil {
+		return nil, fmt.Errorf("failed to parse Midtrans status JSON: %w", err)
+	}
+
+	return p.processNotificationPayload(payload, body)
+}
+
+func (p *MidtransProvider) processNotificationPayload(payload midtransNotification, body []byte) (*domain.WebhookEvent, error) {
 	if payload.OrderID == "" || payload.StatusCode == "" || payload.GrossAmount == "" || payload.SignatureKey == "" {
 		return nil, errors.New("incomplete midtrans notification fields for signature verification")
 	}

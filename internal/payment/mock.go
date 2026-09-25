@@ -72,3 +72,7 @@ func (p *MockProvider) VerifyWebhook(r *http.Request) (*domain.WebhookEvent, err
 		RawPayload:       body,
 	}, nil
 }
+// CheckStatus returns nil for MockProvider (mock status changes occur via sandbox UI or simulation).
+func (p *MockProvider) CheckStatus(ctx context.Context, orderReference string) (*domain.WebhookEvent, error) {
+	return nil, nil
+}

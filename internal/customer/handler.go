@@ -16,6 +16,7 @@ type OrderService interface {
 	ListCustomerOrders(ctx context.Context, customerID int64) ([]domain.Order, error)
 	GetOrderByReference(ctx context.Context, ref string) (*domain.Order, error)
 	GetOrder(ctx context.Context, id int64, requestingUserID int64, isAdmin bool) (*domain.Order, error)
+	SyncPaymentStatus(ctx context.Context, orderReference string) (*domain.Order, error)
 }
 
 // Handler handles customer account dashboard and order history requests.
@@ -103,12 +104,17 @@ func (h *Handler) OrderDetail(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-
 	if err != nil {
 		http.Redirect(w, r, "/account/orders", http.StatusSeeOther)
 		return
 	}
 
+	// If order is still pending, attempt real-time sync with payment provider
+	if order.Status == domain.StatusPending {
+		if synced, syncErr := h.orderService.SyncPaymentStatus(r.Context(), order.Reference); syncErr == nil && synced != nil {
+			order = synced
+		}
+	}
 	// Load files for items if order is paid
 	productFiles := make(map[int64][]domain.ProductFile)
 	if order.Status == domain.StatusPaid {

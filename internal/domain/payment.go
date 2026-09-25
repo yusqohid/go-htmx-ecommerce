@@ -41,4 +41,5 @@ type PaymentProvider interface {
 	Name() string
 	CreateCheckout(ctx context.Context, order *Order) (checkoutURL string, err error)
 	VerifyWebhook(r *http.Request) (*WebhookEvent, error)
+	CheckStatus(ctx context.Context, orderReference string) (*WebhookEvent, error)
 }

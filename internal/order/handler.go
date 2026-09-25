@@ -141,12 +141,15 @@ func (h *Handler) OrderSuccess(w http.ResponseWriter, r *http.Request) {
 
 	ref := chi.URLParam(r, "reference")
 
-	order, err := h.orderService.GetOrderByReference(r.Context(), ref)
-	if err != nil {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
+	// Attempt real-time payment gateway status synchronization if order is pending
+	order, err := h.orderService.SyncPaymentStatus(r.Context(), ref)
+	if err != nil || order == nil {
+		order, err = h.orderService.GetOrderByReference(r.Context(), ref)
+		if err != nil {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
 	}
-
 	// Ownership check: only the order's customer may view the receipt.
 	if order.CustomerID != user.ID {
 		http.Error(w, "Forbidden", http.StatusForbidden)

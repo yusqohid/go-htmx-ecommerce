@@ -414,8 +414,8 @@ body.sidebar-minimized .sidebar-profile {
     margin-right: -2.5rem;
     padding: 1.25rem 2.5rem;
     border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-    display: grid !important;
-    grid-template-columns: 1fr 480px 1fr !important;
+    display: flex !important;
+    justify-content: space-between !important;
     align-items: center;
     margin-bottom: 2rem;
     gap: 1.5rem;
@@ -577,6 +577,7 @@ body.sidebar-minimized .sidebar-profile {
     display: flex;
     align-items: center;
     justify-content: flex-end;
+    margin-left: auto;
     gap: 0.75rem;
 }
 

@@ -3,8 +3,14 @@
 <div class="container py-5">
   <!-- Page Header -->
   <div class="text-center mb-5">
+    <div class="hero-badge mx-auto mb-3">
+      <span class="hero-badge-dot"></span>
+      <span>Browse Verified Kits</span>
+    </div>
     <h1 class="fw-bold mb-2">Digital Product Catalog</h1>
-    <p class="text-muted">Explore our complete collection of curated developer kits, templates, and digital assets.</p>
+    <p class="text-muted max-w-md mx-auto">
+      Explore our complete collection of curated developer kits, boilerplates, and production-ready source code templates.
+    </p>
   </div>
 
   <!-- Search Bar with Live HTMX Trigger -->
@@ -16,7 +22,7 @@
           type="search" 
           name="q" 
           value="{{ .Search }}"
-          placeholder="Search products by title or keywords..."
+          placeholder="Search kits, templates, guides..."
           class="form-control catalog-search-input"
           hx-get="/products"
           hx-trigger="keyup changed delay:300ms, search"
@@ -35,16 +41,16 @@
 
   <!-- Reactive Product Grid Container (HTMX Target & Select) -->
   <div id="product-grid">
-    <div class="d-flex align-items-center justify-content-between mb-4">
+    <div class="d-flex align-items-center justify-content-between mb-4 pb-2 border-bottom">
       <div class="text-muted small">
-        Showing <strong>{{ len .Products }}</strong> of <strong>{{ .Total }}</strong> published items
+        Showing <strong>{{ len .Products }}</strong> of <strong>{{ .Total }}</strong> published kits
         {{ if .Search }}
           for search term <span class="badge bg-light text-dark border ms-1">&ldquo;{{ .Search }}&rdquo;</span>
         {{ end }}
       </div>
 
       {{ if .Search }}
-        <a href="/products" class="btn btn-sm btn-light border text-decoration-none small">
+        <a href="/products" class="btn btn-sm btn-outline-secondary rounded-pill px-3 small">
           <i class="bi bi-x-circle me-1"></i> Clear Filter
         </a>
       {{ end }}
@@ -55,11 +61,15 @@
         {{ range .Products }}
           <div class="col-12 col-md-6 col-lg-4">
             <div class="product-card">
+              <span class="product-card-pill">Digital Kit</span>
               <div class="product-card-thumb">
                 {{ if .ThumbnailURL }}
-                  <img src="{{ .ThumbnailURL }}" alt="{{ .Name }}">
+                  <img src="{{ .ThumbnailURL }}" alt="{{ .Name }}" loading="lazy">
                 {{ else }}
-                  <i class="bi bi-box-seam thumb-icon"></i>
+                  <div class="thumb-placeholder">
+                    <i class="bi bi-box-seam thumb-icon"></i>
+                    <span class="small fw-medium opacity-75">Production Asset</span>
+                  </div>
                 {{ end }}
               </div>
               <div class="product-card-body">
@@ -84,16 +94,16 @@
         <nav aria-label="Catalog pagination" class="d-flex justify-content-center">
           <ul class="pagination">
             <li class="page-item {{ if le .CurrentPage 1 }}disabled{{ end }}">
-              <a class="page-link" href="/products?q={{ .Search }}&page={{ sub .CurrentPage 1 }}" aria-label="Previous">
-                <span aria-hidden="true">&laquo;</span>
+              <a class="page-link rounded-pill me-1" href="/products?q={{ .Search }}&page={{ sub .CurrentPage 1 }}" aria-label="Previous">
+                <span aria-hidden="true">&laquo; Previous</span>
               </a>
             </li>
             <li class="page-item disabled">
-              <span class="page-link text-muted">Page {{ .CurrentPage }} of {{ .TotalPages }}</span>
+              <span class="page-link border-0 text-muted px-3">Page {{ .CurrentPage }} of {{ .TotalPages }}</span>
             </li>
             <li class="page-item {{ if ge .CurrentPage .TotalPages }}disabled{{ end }}">
-              <a class="page-link" href="/products?q={{ .Search }}&page={{ add .CurrentPage 1 }}" aria-label="Next">
-                <span aria-hidden="true">&raquo;</span>
+              <a class="page-link rounded-pill ms-1" href="/products?q={{ .Search }}&page={{ add .CurrentPage 1 }}" aria-label="Next">
+                <span aria-hidden="true">Next &raquo;</span>
               </a>
             </li>
           </ul>
@@ -103,9 +113,9 @@
     {{ else }}
       <!-- Empty State -->
       <div class="text-center py-5 bg-light rounded-4 border">
-        <i class="bi bi-search fs-1 text-muted mb-3 d-block"></i>
-        <h5 class="fw-bold">No Products Found</h5>
-        <p class="text-muted small mb-3">
+        <i class="bi bi-search fs-1 text-muted mb-3 d-block opacity-50"></i>
+        <h5 class="fw-bold text-dark">No Products Found</h5>
+        <p class="text-muted small mb-4 max-w-md mx-auto">
           {{ if .Search }}
             No products matched your search for &ldquo;{{ .Search }}&rdquo;. Try different keywords or reset your search.
           {{ else }}
@@ -113,8 +123,8 @@
           {{ end }}
         </p>
         {{ if .Search }}
-          <a href="/products" class="btn btn-outline-success btn-sm rounded-pill px-3">
-            Reset All Filters
+          <a href="/products" class="btn btn-outline-success rounded-pill px-4">
+            <i class="bi bi-arrow-counterclockwise me-1"></i> Reset All Filters
           </a>
         {{ end }}
       </div>

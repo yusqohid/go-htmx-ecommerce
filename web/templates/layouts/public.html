@@ -16,8 +16,12 @@
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="/static/admin/images/favicon.ico">
 
+  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
   <!-- Core CSS Assets -->
-  <!-- TODO: Improve storefront UI styling, interactive components, and theme customizations (see TODO.md) -->
   <link rel="stylesheet" href="/static/admin/libs/bootstrap/css/bootstrap.min.css">
   <link rel="stylesheet" href="/static/admin/libs/bootstrap-icons/bootstrap-icons.css">
   <link rel="stylesheet" href="/static/storefront/css/storefront.css">
@@ -59,9 +63,10 @@
                 <i class="bi bi-speedometer2 me-1"></i> Admin Panel
               </a>
             {{ else }}
-              <span class="text-muted small me-2 d-none d-md-inline">
-                Hi, <strong>{{ .User.Name }}</strong>
-              </span>
+              <div class="nav-user-badge d-none d-md-inline-flex me-1">
+                <span class="nav-user-avatar"><i class="bi bi-person-fill"></i></span>
+                <span class="fw-semibold">{{ .User.Name }}</span>
+              </div>
             {{ end }}
             <a href="/logout" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
               <i class="bi bi-box-arrow-right me-1"></i> Sign Out

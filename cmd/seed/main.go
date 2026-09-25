@@ -4,21 +4,25 @@ import (
 	"context"
 	"errors"
 	"log"
+	"os"
+	"strings"
 	"time"
 
+	"github.com/joho/godotenv"
 	"github.com/yusqohid/go-htmx-ecommerce/internal/auth"
-	"github.com/yusqohid/go-htmx-ecommerce/internal/config"
 	"github.com/yusqohid/go-htmx-ecommerce/internal/database"
 	"github.com/yusqohid/go-htmx-ecommerce/internal/domain"
 )
 
 func main() {
-	cfg, err := config.Load()
-	if err != nil {
-		log.Fatalf("Failed to load configuration: %v", err)
+	_ = godotenv.Load()
+
+	databaseURL := os.Getenv("DATABASE_URL")
+	if strings.TrimSpace(databaseURL) == "" {
+		databaseURL = "postgres://postgres:postgres@localhost:5432/sellora?sslmode=disable"
 	}
 
-	db, err := database.New(cfg.DatabaseURL)
+	db, err := database.New(databaseURL)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
@@ -31,10 +35,20 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	adminEmail := "admin@sellora.local"
-	adminPassword := "AdminPassword123!"
-	adminName := "Store Administrator"
+	adminEmail := os.Getenv("SEED_ADMIN_EMAIL")
+	if strings.TrimSpace(adminEmail) == "" {
+		adminEmail = "admin@sellora.local"
+	}
 
+	adminPassword := os.Getenv("SEED_ADMIN_PASSWORD")
+	if strings.TrimSpace(adminPassword) == "" {
+		adminPassword = "AdminPassword123!"
+	}
+
+	adminName := os.Getenv("SEED_ADMIN_NAME")
+	if strings.TrimSpace(adminName) == "" {
+		adminName = "Store Administrator"
+	}
 	log.Printf("Checking for default admin account (%s)...", adminEmail)
 	admin, err := authService.CreateAdmin(ctx, adminName, adminEmail, adminPassword)
 	if err != nil {

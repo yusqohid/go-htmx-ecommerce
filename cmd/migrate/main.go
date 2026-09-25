@@ -3,20 +3,24 @@ package main
 import (
 	"context"
 	"log"
+	"os"
+	"strings"
 	"time"
 
-	"github.com/yusqohid/go-htmx-ecommerce/internal/config"
+	"github.com/joho/godotenv"
 	"github.com/yusqohid/go-htmx-ecommerce/internal/database"
 	"github.com/yusqohid/go-htmx-ecommerce/migrations"
 )
 
 func main() {
-	cfg, err := config.Load()
-	if err != nil {
-		log.Fatalf("Failed to load config: %v", err)
+	_ = godotenv.Load()
+
+	databaseURL := os.Getenv("DATABASE_URL")
+	if strings.TrimSpace(databaseURL) == "" {
+		databaseURL = "postgres://postgres:postgres@localhost:5432/sellora?sslmode=disable"
 	}
 
-	db, err := database.New(cfg.DatabaseURL)
+	db, err := database.New(databaseURL)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}

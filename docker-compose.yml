@@ -31,6 +31,7 @@ services:
     environment:
       APP_ENV: production
       DATABASE_URL: postgres://postgres:postgrespassword@db:5432/sellora?sslmode=disable
+      SESSION_SECRET: "${SESSION_SECRET:-sellora-production-session-secret-min-32-chars}"
     restart: "no"
 
   # Sellora Web Application Server

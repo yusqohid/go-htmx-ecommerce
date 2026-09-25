@@ -83,9 +83,9 @@
           </div>
 
           <!-- Checkout Form Submit -->
-          <form method="POST" action="/checkout/{{ .Product.ID }}">
+          <form id="checkout-form" method="POST" action="/checkout/{{ .Product.ID }}">
             <input type="hidden" name="csrf_token" value="">
-            <button type="submit" class="btn btn-success btn-lg w-100 rounded-pill py-3 fw-bold shadow-sm mb-3">
+            <button id="pay-button" type="submit" class="btn btn-success btn-lg w-100 rounded-pill py-3 fw-bold shadow-sm mb-3">
               <i class="bi bi-lock-fill me-1"></i> Proceed to Secure Payment
             </button>
           </form>
@@ -102,10 +102,75 @@
           <i class="bi bi-shield-lock-fill text-success me-1"></i>
           Encrypted 256-bit payment transaction. No banking credentials stored on our server.
         </div>
-
       {{ end }}
 
     </div>
   </div>
 </div>
+
+{{ if and (eq .PaymentProvider "MIDTRANS") .ClientKey }}
+<script src="{{ .SnapScriptURL }}" data-client-key="{{ .ClientKey }}"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    const form = document.getElementById("checkout-form");
+    const payBtn = document.getElementById("pay-button");
+    if (!form || !payBtn) return;
+
+    form.addEventListener("submit", async function(e) {
+      if (window.snap && typeof window.snap.pay === "function") {
+        e.preventDefault();
+        payBtn.disabled = true;
+        payBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Connecting to Midtrans...';
+
+        try {
+          const csrfToken = (typeof getCSRFToken === "function") ? getCSRFToken() : "";
+          const resp = await fetch(form.action, {
+            method: "POST",
+            headers: {
+              "Accept": "application/json",
+              "X-CSRF-Token": csrfToken
+            }
+          });
+
+          if (!resp.ok) {
+            throw new Error("Checkout failed with status " + resp.status);
+          }
+
+          const data = await resp.json();
+          if (data.snap_token) {
+            window.snap.pay(data.snap_token, {
+              onSuccess: function(result) {
+                window.location.href = "/orders/" + data.order_reference + "/success";
+              },
+              onPending: function(result) {
+                window.location.href = "/orders/" + data.order_reference + "/success";
+              },
+              onError: function(result) {
+                alert("Payment error: " + (result.status_message || "Transaction was not completed."));
+                payBtn.disabled = false;
+                payBtn.innerHTML = '<i class="bi bi-lock-fill me-1"></i> Proceed to Secure Payment';
+              },
+              onClose: function() {
+                payBtn.disabled = false;
+                payBtn.innerHTML = '<i class="bi bi-lock-fill me-1"></i> Proceed to Secure Payment';
+              }
+            });
+            return;
+          }
+
+          if (data.checkout_url) {
+            window.location.href = data.checkout_url;
+            return;
+          }
+        } catch (err) {
+          console.error("Snap error, falling back to full redirect:", err);
+          payBtn.disabled = false;
+          payBtn.innerHTML = '<i class="bi bi-lock-fill me-1"></i> Proceed to Secure Payment';
+          form.submit();
+        }
+      }
+    });
+  });
+</script>
+{{ end }}
 {{ end }}

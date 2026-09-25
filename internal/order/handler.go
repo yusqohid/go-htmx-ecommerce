@@ -1,12 +1,12 @@
 package order
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
-
 	"github.com/go-chi/chi/v5"
 	"github.com/yusqohid/go-htmx-ecommerce/internal/auth"
 	"github.com/yusqohid/go-htmx-ecommerce/internal/domain"
@@ -19,6 +19,8 @@ type Handler struct {
 	productRepo     domain.ProductRepository
 	view            *view.View
 	paymentProvider string
+	clientKey       string
+	snapScriptURL   string
 }
 
 // NewHandler constructs a new order Handler.
@@ -27,12 +29,16 @@ func NewHandler(
 	productRepo domain.ProductRepository,
 	view *view.View,
 	paymentProvider string,
+	clientKey string,
+	snapScriptURL string,
 ) *Handler {
 	return &Handler{
 		orderService:    orderService,
 		productRepo:     productRepo,
 		view:            view,
 		paymentProvider: paymentProvider,
+		clientKey:       clientKey,
+		snapScriptURL:   snapScriptURL,
 	}
 }
 
@@ -71,6 +77,8 @@ func (h *Handler) CheckoutPage(w http.ResponseWriter, r *http.Request) {
 			"Product":         product,
 			"AlreadyOwned":    true,
 			"PaymentProvider": strings.ToUpper(h.paymentProvider),
+			"ClientKey":       h.clientKey,
+			"SnapScriptURL":   h.snapScriptURL,
 		})
 		return
 	}
@@ -80,6 +88,8 @@ func (h *Handler) CheckoutPage(w http.ResponseWriter, r *http.Request) {
 		"User":            user,
 		"Product":         product,
 		"PaymentProvider": strings.ToUpper(h.paymentProvider),
+		"ClientKey":       h.clientKey,
+		"SnapScriptURL":   h.snapScriptURL,
 	})
 }
 
@@ -127,7 +137,24 @@ func (h *Handler) ProcessCheckout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_ = order
-	// Redirect user to payment provider checkout page
+	// Return JSON response for AJAX / HTMX requests to allow in-page Snap modal payment
+	if r.Header.Get("HX-Request") == "true" || strings.Contains(r.Header.Get("Accept"), "application/json") {
+		token := ""
+		parts := strings.Split(strings.TrimRight(checkoutURL, "/"), "/")
+		if len(parts) > 0 {
+			token = parts[len(parts)-1]
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"order_reference": order.Reference,
+			"checkout_url":    checkoutURL,
+			"snap_token":      token,
+		})
+		return
+	}
+
+	// Normal browser submission fallback: redirect to external checkout page
 	http.Redirect(w, r, checkoutURL, http.StatusSeeOther)
 }
 

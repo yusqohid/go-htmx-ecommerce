@@ -2,6 +2,8 @@ package order_test
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -39,7 +41,7 @@ func setupOrderHandlerTest(t *testing.T) (*order.Service, *MockProductRepo, *Moc
 	}
 
 	renderer := view.New(mockFS, false)
-	handler := order.NewHandler(service, productRepo, renderer, "mock")
+	handler := order.NewHandler(service, productRepo, renderer, "mock", "test-client-key", "https://app.sandbox.midtrans.com/snap/snap.js")
 
 	return service, productRepo, orderRepo, handler
 }
@@ -263,5 +265,43 @@ func TestOrderSuccess_OwnershipEnforced(t *testing.T) {
 	r.ServeHTTP(recOwner, reqOwner)
 	if recOwner.Code != http.StatusOK {
 		t.Errorf("owner: expected 200 OK, got %d", recOwner.Code)
+	}
+}
+func TestProcessCheckout_JSON(t *testing.T) {
+	_, productRepo, _, handler := setupOrderHandlerTest(t)
+	ctx := context.Background()
+
+	prod := &domain.Product{
+		Name:   "JSON Checkout Prod",
+		Price:  100000,
+		Status: domain.StatusPublished,
+	}
+	_ = productRepo.Create(ctx, prod)
+
+	r := chi.NewRouter()
+	r.Post("/checkout/{productID}", handler.ProcessCheckout)
+
+	user := &domain.User{ID: 25, Email: "ajax@example.com"}
+	req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/checkout/%d", prod.ID), nil)
+	req.Header.Set("Accept", "application/json")
+	req = req.WithContext(auth.WithUser(req.Context(), user))
+	rec := httptest.NewRecorder()
+
+	r.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK for JSON checkout, got %d", rec.Code)
+	}
+
+	var payload map[string]any
+	if err := json.NewDecoder(rec.Body).Decode(&payload); err != nil {
+		t.Fatalf("failed to decode JSON response: %v", err)
+	}
+
+	if payload["order_reference"] == "" || payload["order_reference"] == nil {
+		t.Error("expected non-empty order_reference")
+	}
+	if payload["checkout_url"] == "" || payload["checkout_url"] == nil {
+		t.Error("expected non-empty checkout_url")
 	}
 }

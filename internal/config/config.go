@@ -17,9 +17,13 @@ type Config struct {
 	SessionSecret     string
 	StoragePath       string
 	PaymentProvider   string
-	LynkAPIKey       string
-	LynkWebhookSecret string
-	LynkBaseURL       string
+	LynkAPIKey           string
+	LynkWebhookSecret     string
+	LynkBaseURL           string
+	MidtransServerKey     string
+	MidtransClientKey     string
+	MidtransIsProduction bool
+	MidtransSnapURL       string
 }
 
 // Load loads configuration from .env and system environment variables.
@@ -35,15 +39,33 @@ func Load() (*Config, error) {
 		SessionSecret:     getEnv("SESSION_SECRET", "default-dev-secret-key-must-change-in-production"),
 		StoragePath:       getEnv("STORAGE_PATH", "./storage/products"),
 		PaymentProvider:   strings.ToLower(getEnv("PAYMENT_PROVIDER", "mock")),
-		LynkAPIKey:       getEnv("LYNK_API_KEY", ""),
-		LynkWebhookSecret: getEnv("LYNK_WEBHOOK_SECRET", ""),
-		LynkBaseURL:       getEnv("LYNK_BASE_URL", "https://api.lynk.id"),
+		LynkAPIKey:           getEnv("LYNK_API_KEY", ""),
+		LynkWebhookSecret:     getEnv("LYNK_WEBHOOK_SECRET", ""),
+		LynkBaseURL:           getEnv("LYNK_BASE_URL", "https://api.lynk.id"),
+		MidtransServerKey:     getEnv("MIDTRANS_SERVER_KEY", ""),
+		MidtransClientKey:     getEnv("MIDTRANS_CLIENT_KEY", ""),
+		MidtransIsProduction: strings.ToLower(getEnv("MIDTRANS_IS_PRODUCTION", "false")) == "true",
+		MidtransSnapURL:       getEnv("MIDTRANS_SNAP_URL", ""),
 	}
-
 	if cfg.IsProduction() && (cfg.SessionSecret == "" || cfg.SessionSecret == "default-dev-secret-key-must-change-in-production") {
 		return nil, fmt.Errorf("SESSION_SECRET must be set to a secure string in production")
 	}
 
+	if cfg.IsProduction() && cfg.PaymentProvider == "mock" {
+		return nil, fmt.Errorf("PAYMENT_PROVIDER 'mock' is strictly prohibited in production mode")
+	}
+
+	if cfg.PaymentProvider == "midtrans" && cfg.MidtransServerKey == "" {
+		return nil, fmt.Errorf("MIDTRANS_SERVER_KEY must be provided when payment provider is set to 'midtrans'")
+	}
+
+	if cfg.MidtransSnapURL == "" {
+		if cfg.MidtransIsProduction {
+			cfg.MidtransSnapURL = "https://app.midtrans.com/snap/v1/transactions"
+		} else {
+			cfg.MidtransSnapURL = "https://app.sandbox.midtrans.com/snap/v1/transactions"
+		}
+	}
 	return cfg, nil
 }
 

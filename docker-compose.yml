@@ -1,0 +1,66 @@
+services:
+  # PostgreSQL Database Service
+  db:
+    image: postgres:16-alpine
+    container_name: sellora-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: sellora
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d sellora"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # One-shot database migration runner
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sellora-migrate
+    entrypoint: ["/bin/migrate"]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      APP_ENV: production
+      DATABASE_URL: postgres://postgres:postgrespassword@db:5432/sellora?sslmode=disable
+    restart: "no"
+
+  # Sellora Web Application Server
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sellora-app
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      APP_ENV: production
+      APP_PORT: "8080"
+      APP_BASE_URL: "http://localhost:8080"
+      DATABASE_URL: "postgres://postgres:postgrespassword@db:5432/sellora?sslmode=disable"
+      SESSION_SECRET: "sellora-production-session-secret-min-32-chars"
+      STORAGE_PATH: "/app/storage/products"
+      PAYMENT_PROVIDER: "midtrans"
+      MIDTRANS_SERVER_KEY: "${MIDTRANS_SERVER_KEY:-SB-Mid-server-YourSandboxServerKeyHere}"
+      MIDTRANS_CLIENT_KEY: "${MIDTRANS_CLIENT_KEY:-SB-Mid-client-YourSandboxClientKeyHere}"
+      MIDTRANS_IS_PRODUCTION: "${MIDTRANS_IS_PRODUCTION:-false}"
+    volumes:
+      - storage_data:/app/storage/products
+
+volumes:
+  postgres_data:
+  storage_data:

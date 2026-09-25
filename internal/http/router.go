@@ -38,13 +38,19 @@ type RouterDeps struct {
 func NewRouter(deps RouterDeps) http.Handler {
 	r := chi.NewRouter()
 
+	isProduction := false
+	if deps.Config != nil {
+		isProduction = deps.Config.IsProduction()
+	}
+
 	// Base middleware stack
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+	r.Use(SecurityHeaders(isProduction))
+	r.Use(CSRF(isProduction))
 	r.Use(middleware.Timeout(60 * time.Second))
-
 	// Attach user session to request context if present (must be before any routes)
 	if deps.AuthService != nil {
 		r.Use(auth.Authenticate(deps.AuthService))

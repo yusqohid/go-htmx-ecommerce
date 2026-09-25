@@ -1,41 +1,103 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ .Title }} - Sellora</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- HTMX CDN -->
-    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ if .Title }}{{ .Title }} - Sellora{{ else }}Sellora - Account Access{{ end }}</title>
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="/static/admin/images/favicon.ico">
+
+  <!-- Core CSS Assets (Local Bootstrap 5) -->
+  <link rel="stylesheet" href="/static/admin/libs/bootstrap/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/static/admin/libs/bootstrap-icons/bootstrap-icons.css">
+  <link rel="stylesheet" href="/static/storefront/css/storefront.css">
+
+  <!-- HTMX (Self-Hosted) -->
+  <script src="/static/libs/htmx/htmx.min.js"></script>
+  <script>
+    function getCSRFToken() {
+      const match = document.cookie.match(/(^|;)\s*sellora_csrf=([^;]+)/);
+      return match ? decodeURIComponent(match[2]) : "";
+    }
+    document.addEventListener("DOMContentLoaded", function() {
+      const token = getCSRFToken();
+      if (token) {
+        document.querySelectorAll("form").forEach(function(f) {
+          if (f.method && f.method.toUpperCase() === "POST" && !f.querySelector("input[name='csrf_token']")) {
+            const inp = document.createElement("input");
+            inp.type = "hidden";
+            inp.name = "csrf_token";
+            inp.value = token;
+            f.appendChild(inp);
+          }
+        });
+      }
+    });
+    document.addEventListener("htmx:configRequest", function(evt) {
+      const token = getCSRFToken();
+      if (token) {
+        evt.detail.headers["X-CSRF-Token"] = token;
+      }
+    });
+  </script>
+
+  <style>
+    body {
+      background-color: #f8fafc;
+    }
+    .auth-brand {
+      font-weight: 700;
+      font-size: 1.5rem;
+      letter-spacing: -0.025em;
+      color: #0f172a;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .auth-card {
+      background: #ffffff;
+      border: 1px solid rgba(226, 232, 240, 0.9);
+      border-radius: 1.25rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.04), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+      padding: 2.25rem 2rem;
+    }
+    @media (min-width: 576px) {
+      .auth-card {
+        padding: 2.75rem 2.5rem;
+      }
+    }
+    .form-control:focus {
+      border-color: #10b981;
+      box-shadow: 0 0 0 0.25rem rgba(16, 185, 129, 0.15);
+    }
+  </style>
 </head>
-<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col justify-between">
-    <header class="py-6 px-4 sm:px-6 lg:px-8 border-b border-slate-200 bg-white">
-        <div class="max-w-7xl mx-auto flex items-center justify-between">
-            <a href="/" class="text-2xl font-black tracking-tight text-indigo-600 flex items-center gap-2">
-                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
-                </svg>
-                <span>Sellora</span>
-            </a>
-            <div class="text-sm text-slate-500">
-                Digital Product Commerce
-            </div>
-        </div>
-    </header>
+<body class="min-vh-100 d-flex flex-column justify-content-between">
+  <!-- Minimal Top Header -->
+  <header class="py-4 border-bottom bg-white">
+    <div class="container d-flex align-items-center justify-content-between">
+      <a href="/" class="auth-brand">
+        <i class="bi bi-bag-check-fill text-success"></i>
+        <span>Sellora</span>
+      </a>
+      <div class="text-muted small d-none d-sm-inline">
+        Digital Product Commerce
+      </div>
+    </div>
+  </header>
 
-    <main class="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">
-        {{ template "content" . }}
-    </main>
+  <!-- Auth Content Center Container -->
+  <main class="flex-grow-1 d-flex align-items-center justify-content-center py-5 px-3">
+    {{ template "content" . }}
+  </main>
 
-    <footer class="py-6 border-t border-slate-200 text-center text-xs text-slate-400">
-        &copy; 2026 Sellora. Single-vendor digital product commerce platform.
-    </footer>
+  <!-- Clean Footer -->
+  <footer class="py-4 border-top bg-white text-center text-muted small">
+    <div class="container">
+      &copy; 2026 Sellora. Single-vendor digital product commerce platform.
+    </div>
+  </footer>
 </body>
 </html>

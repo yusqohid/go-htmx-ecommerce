@@ -15,6 +15,7 @@ import (
 	"github.com/yusqohid/go-htmx-ecommerce/internal/config"
 	"github.com/yusqohid/go-htmx-ecommerce/internal/customer"
 	"github.com/yusqohid/go-htmx-ecommerce/internal/database"
+	"github.com/yusqohid/go-htmx-ecommerce/internal/email"
 	appHTTP "github.com/yusqohid/go-htmx-ecommerce/internal/http"
 	"github.com/yusqohid/go-htmx-ecommerce/internal/order"
 	"github.com/yusqohid/go-htmx-ecommerce/internal/payment"
@@ -82,9 +83,25 @@ func main() {
 			log.Fatalf("Failed to initialize payment provider: %v", err)
 		}
 		paymentEventRepo := payment.NewPaymentEventRepository(db.DB)
+		var emailSender email.Sender
+		if cfg.SMTPHost != "" {
+			emailSender = email.NewSMTPSender(email.SMTPConfig{
+				Host:      cfg.SMTPHost,
+				Port:      cfg.SMTPPort,
+				Username:  cfg.SMTPUsername,
+				Password:  cfg.SMTPPassword,
+				FromEmail: cfg.SMTPFromEmail,
+				FromName:  cfg.SMTPFromName,
+			})
+			log.Printf("Transactional email configured with SMTP host: %s:%s", cfg.SMTPHost, cfg.SMTPPort)
+		} else {
+			emailSender = email.NewLogSender(cfg.SMTPFromEmail, cfg.SMTPFromName)
+			log.Println("SMTP_HOST not set: using LogSender for transactional emails (logs to console)")
+		}
+		emailService := email.NewService(emailSender, cfg.AppBaseURL)
 
 		orderRepo := order.NewOrderRepository(db.DB)
-		orderService := order.NewService(orderRepo, productRepo, paymentProvider)
+		orderService := order.NewService(orderRepo, productRepo, paymentProvider, emailService)
 		snapScriptURL := "https://app.sandbox.midtrans.com/snap/snap.js"
 		if cfg.MidtransIsProduction {
 			snapScriptURL = "https://app.midtrans.com/snap/snap.js"

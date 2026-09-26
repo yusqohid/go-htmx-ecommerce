@@ -24,6 +24,12 @@ func TestConfigLoadDefaults(t *testing.T) {
 	if cfg.IsProduction() {
 		t.Errorf("expected IsProduction to be false by default")
 	}
+	if cfg.SMTPPort != "587" {
+		t.Errorf("expected default SMTPPort 587, got %s", cfg.SMTPPort)
+	}
+	if cfg.SMTPFromEmail != "no-reply@sellora.local" {
+		t.Errorf("expected default SMTPFromEmail, got %s", cfg.SMTPFromEmail)
+	}
 }
 
 func TestConfigProductionValidation(t *testing.T) {

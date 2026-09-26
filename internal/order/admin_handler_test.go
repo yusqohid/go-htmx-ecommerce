@@ -19,7 +19,7 @@ func setupAdminOrderHandlerTest(t *testing.T) (*order.Service, *MockOrderRepo, *
 
 	orderRepo := NewMockOrderRepo()
 	productRepo := NewMockProductRepo()
-	service := order.NewService(orderRepo, productRepo, &MockPaymentProvider{})
+	service := order.NewService(orderRepo, productRepo, &MockPaymentProvider{}, nil)
 
 	mockFS := fstest.MapFS{
 		"layouts/admin.html": &fstest.MapFile{

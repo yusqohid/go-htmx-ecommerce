@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/yusqohid/go-htmx-ecommerce/internal/domain"
@@ -18,11 +19,17 @@ var (
 	ErrProductNotAvailable = errors.New("product is not available for purchase")
 )
 
+// EmailNotifier defines the contract for sending order notifications.
+type EmailNotifier interface {
+	SendOrderReceipt(ctx context.Context, order *domain.Order) error
+}
+
 // Service contains all order domain business rules and payment coordination.
 type Service struct {
 	orderRepo       domain.OrderRepository
 	productRepo     domain.ProductRepository
 	paymentProvider domain.PaymentProvider
+	emailNotifier   EmailNotifier
 }
 
 // NewService constructs a new order Service.
@@ -30,11 +37,13 @@ func NewService(
 	orderRepo domain.OrderRepository,
 	productRepo domain.ProductRepository,
 	paymentProvider domain.PaymentProvider,
+	emailNotifier EmailNotifier,
 ) *Service {
 	return &Service{
 		orderRepo:       orderRepo,
 		productRepo:     productRepo,
 		paymentProvider: paymentProvider,
+		emailNotifier:   emailNotifier,
 	}
 }
 
@@ -167,12 +176,28 @@ func (s *Service) UpdateOrderStatus(ctx context.Context, id int64, status domain
 		return fmt.Errorf("cannot transition order in terminal state %s to %s", order.Status, status)
 	}
 
-	return s.orderRepo.UpdateStatus(ctx, id, status, paymentRef)
+	if err := s.orderRepo.UpdateStatus(ctx, id, status, paymentRef); err != nil {
+		return err
+	}
+
+	if status == domain.StatusPaid {
+		s.notifyOrderPaid(id)
+	}
+
+	return nil
 }
 
 // ProcessPaymentResult atomically updates order status and records the payment event.
 func (s *Service) ProcessPaymentResult(ctx context.Context, orderID int64, status domain.OrderStatus, paymentRef string, event *domain.PaymentEvent) error {
-	return s.orderRepo.ProcessPaymentResult(ctx, orderID, status, paymentRef, event)
+	if err := s.orderRepo.ProcessPaymentResult(ctx, orderID, status, paymentRef, event); err != nil {
+		return err
+	}
+
+	if status == domain.StatusPaid {
+		s.notifyOrderPaid(orderID)
+	}
+
+	return nil
 }
 // SyncPaymentStatus queries the payment provider directly to synchronize order status if pending.
 func (s *Service) SyncPaymentStatus(ctx context.Context, orderReference string) (*domain.Order, error) {
@@ -209,7 +234,35 @@ func (s *Service) SyncPaymentStatus(ctx context.Context, orderReference string) 
 		return ord, fmt.Errorf("failed to process payment sync: %w", err)
 	}
 
+	if event.Status == domain.StatusPaid {
+		s.notifyOrderPaid(ord.ID)
+	}
+
 	return s.orderRepo.FindByReference(ctx, orderReference)
+}
+
+func (s *Service) notifyOrderPaid(orderID int64) {
+	if s.emailNotifier == nil {
+		return
+	}
+
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+		defer cancel()
+
+		order, err := s.orderRepo.FindByID(ctx, orderID)
+		if err != nil {
+			log.Printf("[OrderService] Failed to load order %d for email receipt: %v", orderID, err)
+			return
+		}
+		if order == nil || order.Customer == nil || order.Customer.Email == "" {
+			return
+		}
+
+		if err := s.emailNotifier.SendOrderReceipt(ctx, order); err != nil {
+			log.Printf("[OrderService] Failed to send receipt for order %s: %v", order.Reference, err)
+		}
+	}()
 }
 
 // HasAccessToProduct checks whether the user owns a paid order for the given product.

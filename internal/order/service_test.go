@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"sync"
 	"testing"
 	"time"
 
@@ -170,11 +171,31 @@ func (m *MockPaymentProvider) CheckStatus(ctx context.Context, orderReference st
 	return nil, nil
 }
 
+type MockEmailNotifier struct {
+	mu             sync.Mutex
+	notifiedOrders []*domain.Order
+}
+
+func (m *MockEmailNotifier) SendOrderReceipt(ctx context.Context, order *domain.Order) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.notifiedOrders = append(m.notifiedOrders, order)
+	return nil
+}
+
+func (m *MockEmailNotifier) NotifiedOrders() []*domain.Order {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	copied := make([]*domain.Order, len(m.notifiedOrders))
+	copy(copied, m.notifiedOrders)
+	return copied
+}
+
 func TestService_CreateOrder_Success(t *testing.T) {
 	orderRepo := NewMockOrderRepo()
 	productRepo := NewMockProductRepo()
 	paymentProv := &MockPaymentProvider{}
-	service := order.NewService(orderRepo, productRepo, paymentProv)
+	service := order.NewService(orderRepo, productRepo, paymentProv, nil)
 	ctx := context.Background()
 
 	customer := &domain.User{ID: 10, Name: "Budi", Email: "budi@example.com"}
@@ -211,7 +232,7 @@ func TestService_CreateOrder_Success(t *testing.T) {
 func TestService_CreateOrder_UnpublishedProduct(t *testing.T) {
 	orderRepo := NewMockOrderRepo()
 	productRepo := NewMockProductRepo()
-	service := order.NewService(orderRepo, productRepo, &MockPaymentProvider{})
+	service := order.NewService(orderRepo, productRepo, &MockPaymentProvider{}, nil)
 	ctx := context.Background()
 
 	customer := &domain.User{ID: 10}
@@ -235,7 +256,7 @@ func TestService_CreateOrder_UnpublishedProduct(t *testing.T) {
 func TestService_CreateOrder_AlreadyPurchased(t *testing.T) {
 	orderRepo := NewMockOrderRepo()
 	productRepo := NewMockProductRepo()
-	service := order.NewService(orderRepo, productRepo, &MockPaymentProvider{})
+	service := order.NewService(orderRepo, productRepo, &MockPaymentProvider{}, nil)
 	ctx := context.Background()
 
 	customer := &domain.User{ID: 10}
@@ -266,7 +287,7 @@ func TestService_CreateOrder_AlreadyPurchased(t *testing.T) {
 
 func TestService_GetOrder_Authorization(t *testing.T) {
 	orderRepo := NewMockOrderRepo()
-	service := order.NewService(orderRepo, NewMockProductRepo(), &MockPaymentProvider{})
+	service := order.NewService(orderRepo, NewMockProductRepo(), &MockPaymentProvider{}, nil)
 	ctx := context.Background()
 
 	ord := &domain.Order{
@@ -298,7 +319,7 @@ func TestService_GetOrder_Authorization(t *testing.T) {
 
 func TestService_UpdateOrderStatus(t *testing.T) {
 	orderRepo := NewMockOrderRepo()
-	service := order.NewService(orderRepo, NewMockProductRepo(), &MockPaymentProvider{})
+	service := order.NewService(orderRepo, NewMockProductRepo(), &MockPaymentProvider{}, nil)
 	ctx := context.Background()
 
 	ord := &domain.Order{
@@ -348,7 +369,7 @@ func TestService_SyncPaymentStatus(t *testing.T) {
 			Amount:           150000,
 		},
 	}
-	service := order.NewService(orderRepo, NewMockProductRepo(), mockProvider)
+	service := order.NewService(orderRepo, NewMockProductRepo(), mockProvider, nil)
 	ctx := context.Background()
 
 	ord := &domain.Order{
@@ -368,5 +389,38 @@ func TestService_SyncPaymentStatus(t *testing.T) {
 	}
 	if synced.PaymentReference != "TX-SYNC-100" {
 		t.Errorf("expected payment ref TX-SYNC-100, got %s", synced.PaymentReference)
+	}
+}
+func TestService_EmailNotificationOnPayment(t *testing.T) {
+	orderRepo := NewMockOrderRepo()
+	productRepo := NewMockProductRepo()
+	notifier := &MockEmailNotifier{}
+	service := order.NewService(orderRepo, productRepo, &MockPaymentProvider{}, notifier)
+	ctx := context.Background()
+
+	ord := &domain.Order{
+		Reference:   "ORD-EMAIL-01",
+		CustomerID:  10,
+		Customer:    &domain.User{ID: 10, Name: "Alice", Email: "alice@example.com"},
+		Status:      domain.StatusPending,
+		TotalAmount: 100000,
+	}
+	_ = orderRepo.Create(ctx, ord)
+
+	// Update to paid
+	err := service.UpdateOrderStatus(ctx, ord.ID, domain.StatusPaid, "TX-EMAIL-01")
+	if err != nil {
+		t.Fatalf("failed updating status: %v", err)
+	}
+
+	// Wait briefly for asynchronous notification goroutine
+	time.Sleep(50 * time.Millisecond)
+
+	notified := notifier.NotifiedOrders()
+	if len(notified) != 1 {
+		t.Fatalf("expected 1 notified order, got %d", len(notified))
+	}
+	if notified[0].Reference != "ORD-EMAIL-01" {
+		t.Errorf("expected reference ORD-EMAIL-01, got %s", notified[0].Reference)
 	}
 }

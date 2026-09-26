@@ -48,7 +48,12 @@
                 <div class="d-flex flex-wrap align-items-center gap-3">
                   <div>
                     <span class="text-muted small d-block">Order Reference</span>
-                    <span class="fw-bold text-dark font-monospace">{{ .Reference }}</span>
+                    <div class="d-flex align-items-center gap-1">
+                      <span class="fw-bold text-dark font-monospace">{{ .Reference }}</span>
+                      <button type="button" class="btn btn-sm btn-link text-muted p-0 ms-1 copy-ref-btn" data-clipboard="{{ .Reference }}" title="Copy Reference">
+                        <i class="bi bi-clipboard"></i>
+                      </button>
+                    </div>
                   </div>
                   <div class="border-start ps-3 d-none d-sm-block">
                     <span class="text-muted small d-block">Date Placed</span>

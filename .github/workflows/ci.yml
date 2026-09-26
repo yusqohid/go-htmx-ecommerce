@@ -1,0 +1,63 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test & Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+
+      - name: Verify Go modules
+        run: go mod verify
+
+      - name: Run go vet
+        run: go vet ./...
+
+      - name: Run unit & race tests
+        run: go test -v -race ./...
+
+      - name: Verify static compilation of CLI entrypoints
+        run: |
+          CGO_ENABLED=0 go build -ldflags="-s -w" -o /dev/null ./cmd/server
+          CGO_ENABLED=0 go build -ldflags="-s -w" -o /dev/null ./cmd/migrate
+          CGO_ENABLED=0 go build -ldflags="-s -w" -o /dev/null ./cmd/seed
+
+  docker:
+    name: Docker Build Verification
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: sellora:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

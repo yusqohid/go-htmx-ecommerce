@@ -170,5 +170,28 @@
 
   <!-- Bootstrap 5 Bundle JS -->
   <script src="/static/admin/libs/bootstrap/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Reusable 1-Click Clipboard Copy Handler -->
+  <script>
+    document.addEventListener("click", function(e) {
+      const btn = e.target.closest(".copy-ref-btn");
+      if (!btn) return;
+      const text = btn.getAttribute("data-clipboard");
+      if (!text) return;
+      navigator.clipboard.writeText(text).then(function() {
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = '<i class="bi bi-check text-success"></i> Copied!';
+        btn.classList.add("btn-outline-success");
+        btn.classList.remove("btn-outline-secondary");
+        setTimeout(function() {
+          btn.innerHTML = originalHTML;
+          btn.classList.remove("btn-outline-success");
+          btn.classList.add("btn-outline-secondary");
+        }, 2000);
+      }).catch(function(err) {
+        console.error("Clipboard copy failed: ", err);
+      });
+    });
+  </script>
 </body>
 </html>

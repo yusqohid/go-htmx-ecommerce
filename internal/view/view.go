@@ -68,6 +68,7 @@ func FuncMap() template.FuncMap {
 			replaced := strings.ReplaceAll(escaped, "\n", "<br>")
 			return template.HTML(replaced)
 		},
+		"renderMarkdown": RenderMarkdown,
 	}
 }
 

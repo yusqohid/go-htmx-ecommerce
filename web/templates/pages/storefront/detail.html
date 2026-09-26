@@ -61,11 +61,11 @@
       <!-- Full Description -->
       <div class="mb-5">
         <h4 class="fw-bold mb-3">Product Overview</h4>
-        <div class="text-muted lh-lg">
+        <div class="text-secondary lh-lg markdown-body">
           {{ if .Product.FullDescription }}
-            {{ nl2br .Product.FullDescription }}
+            {{ renderMarkdown .Product.FullDescription }}
           {{ else }}
-            <p>No extended documentation provided for this product.</p>
+            <p class="text-muted fst-italic">No extended documentation provided for this product.</p>
           {{ end }}
         </div>
       </div>

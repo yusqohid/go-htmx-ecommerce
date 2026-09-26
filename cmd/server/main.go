@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -32,8 +33,21 @@ func main() {
 		log.Fatalf("Configuration error: %v", err)
 	}
 
-	log.Printf("Starting Sellora (%s mode)...", cfg.AppEnv)
+	// 2. Initialize structured logging (slog)
+	var logHandler slog.Handler
+	if cfg.IsProduction() {
+		logHandler = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+			Level: slog.LevelInfo,
+		})
+	} else {
+		logHandler = slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+			Level: slog.LevelDebug,
+		})
+	}
+	appLogger := slog.New(logHandler)
+	slog.SetDefault(appLogger)
 
+	appLogger.Info("Starting Sellora", "env", cfg.AppEnv, "port", cfg.AppPort, "base_url", cfg.AppBaseURL)
 	// 2. Initialize database connection
 	db, err := database.New(cfg.DatabaseURL)
 	if err != nil {
@@ -130,8 +144,8 @@ func main() {
 		DownloadHandler:   downloadHandler,
 		CustomerHandler:   customerHandler,
 		AdminOrderHandler: adminOrderHandler,
+		Logger:            appLogger,
 	})
-
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%s", cfg.AppPort),
 		Handler:      router,

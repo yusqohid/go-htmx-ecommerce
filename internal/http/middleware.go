@@ -5,8 +5,13 @@ import (
 	"crypto/rand"
 	"crypto/subtle"
 	"encoding/hex"
+	"log/slog"
 	"net/http"
+	"runtime/debug"
 	"strings"
+	"time"
+
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 type contextKey string
@@ -124,6 +129,94 @@ func CSRF(isProduction bool) func(http.Handler) http.Handler {
 				http.Error(w, "Forbidden: Invalid or missing CSRF token", http.StatusForbidden)
 				return
 			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+// StructuredLogger produces structured, machine-readable HTTP request logs via log/slog.
+func StructuredLogger(logger *slog.Logger) func(http.Handler) http.Handler {
+	if logger == nil {
+		logger = slog.Default()
+	}
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			start := time.Now()
+			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
+
+			defer func() {
+				duration := time.Since(start)
+				status := ww.Status()
+				if status == 0 {
+					status = http.StatusOK
+				}
+
+				reqID := middleware.GetReqID(r.Context())
+
+				attrs := []slog.Attr{
+					slog.String("method", r.Method),
+					slog.String("path", r.URL.Path),
+					slog.Int("status", status),
+					slog.Int("bytes", ww.BytesWritten()),
+					slog.Float64("duration_ms", float64(duration.Microseconds())/1000.0),
+					slog.String("remote_ip", r.RemoteAddr),
+				}
+				if reqID != "" {
+					attrs = append(attrs, slog.String("request_id", reqID))
+				}
+
+				level := slog.LevelInfo
+				if status >= 500 {
+					level = slog.LevelError
+				} else if status >= 400 {
+					level = slog.LevelWarn
+				}
+
+				logger.LogAttrs(r.Context(), level, "HTTP request completed", attrs...)
+			}()
+
+			next.ServeHTTP(ww, r)
+		})
+	}
+}
+
+// PanicRecovery gracefully catches runtime panics, logs the stack trace with slog,
+// and returns a safe 500 Internal Server Error without leaking internal stack traces.
+func PanicRecovery(logger *slog.Logger) func(http.Handler) http.Handler {
+	if logger == nil {
+		logger = slog.Default()
+	}
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			defer func() {
+				if rvr := recover(); rvr != nil {
+					if rvr == http.ErrAbortHandler {
+						panic(rvr)
+					}
+
+					reqID := middleware.GetReqID(r.Context())
+					stack := string(debug.Stack())
+
+					logger.ErrorContext(r.Context(), "Unhandled panic recovered in HTTP handler",
+						slog.Any("error", rvr),
+						slog.String("stack", stack),
+						slog.String("method", r.Method),
+						slog.String("path", r.URL.Path),
+						slog.String("request_id", reqID),
+					)
+
+					w.Header().Set("Content-Type", "text/html; charset=utf-8")
+					w.WriteHeader(http.StatusInternalServerError)
+					_, _ = w.Write([]byte(`<!DOCTYPE html>
+<html>
+<head><title>500 Internal Server Error</title></head>
+<body style="font-family: sans-serif; text-align: center; padding: 50px;">
+  <h1>500 - Internal Server Error</h1>
+  <p>Something went wrong on our end. Please try again later.</p>
+</body>
+</html>`))
+				}
+			}()
 
 			next.ServeHTTP(w, r)
 		})

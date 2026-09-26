@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -32,8 +33,8 @@ type RouterDeps struct {
 	DownloadHandler   *product.DownloadHandler
 	CustomerHandler   *customer.Handler
 	AdminOrderHandler *order.AdminHandler
+	Logger            *slog.Logger
 }
-
 // NewRouter sets up the Chi HTTP router with base middlewares, static files, auth, and routes.
 func NewRouter(deps RouterDeps) http.Handler {
 	r := chi.NewRouter()
@@ -43,15 +44,19 @@ func NewRouter(deps RouterDeps) http.Handler {
 		isProduction = deps.Config.IsProduction()
 	}
 
+	logger := deps.Logger
+	if logger == nil {
+		logger = slog.Default()
+	}
+
 	// Base middleware stack
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
+	r.Use(StructuredLogger(logger))
+	r.Use(PanicRecovery(logger))
 	r.Use(SecurityHeaders(isProduction))
 	r.Use(CSRF(isProduction))
 	r.Use(middleware.Timeout(60 * time.Second))
-	// Attach user session to request context if present (must be before any routes)
 	if deps.AuthService != nil {
 		r.Use(auth.Authenticate(deps.AuthService))
 	}

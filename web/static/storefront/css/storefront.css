@@ -197,6 +197,25 @@ a:hover {
   color: var(--brand-forest-medium);
 }
 
+/* HTMX Transition & Indicator */
+#product-grid {
+  transition: opacity 0.2s ease-in-out;
+}
+
+#product-grid.htmx-request {
+  opacity: 0.55;
+}
+
+.htmx-indicator {
+  opacity: 0;
+  transition: opacity 150ms ease-in;
+}
+
+.htmx-request .htmx-indicator,
+.htmx-request.htmx-indicator {
+  opacity: 1;
+}
+
 /* User Profile Dropdown Button in Topbar */
 .btn-user-profile {
   display: inline-flex;

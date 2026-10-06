@@ -1,0 +1,130 @@
+{{ define "content" }}
+<!-- START: Page Header Banner -->
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Gallery Images Management</h1>
+    <p class="page-subtitle">Manage additional preview screenshots attached to <strong>{{ .Product.Name }}</strong>.</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="/admin/products/{{ .Product.ID }}/edit" class="btn-custom btn-custom-secondary btn-custom-sm text-decoration-none">
+      <i class="bi bi-pencil me-1"></i> Edit Product
+    </a>
+    <a href="/admin/products" class="btn-custom btn-custom-secondary btn-custom-sm text-decoration-none">
+      <i class="bi bi-arrow-left me-1"></i> Back to Products
+    </a>
+  </div>
+</div>
+<!-- END: Page Header Banner -->
+
+{{ if .Error }}
+<div class="alert-custom alert-custom-danger mb-4">
+  <i class="bi bi-exclamation-triangle-fill alert-custom-icon"></i>
+  <div class="alert-custom-content">{{ .Error }}</div>
+</div>
+{{ end }}
+
+<div class="row g-4 mb-4">
+  <!-- Add New Image Card -->
+  <div class="col-12 col-lg-5">
+    <div class="card border-light shadow-sm p-4 h-100">
+      <h5 class="card-title mb-2"><i class="bi bi-images text-success me-2"></i> Add Gallery Image</h5>
+      <p class="text-muted small mb-4">Add direct URLs to screenshots, UI previews, or promotional graphics that will be shown in the product gallery.</p>
+
+      <form method="POST" action="/admin/products/{{ .Product.ID }}/images">
+        <input type="hidden" name="csrf_token" value="">
+        <div class="mb-3">
+          <label for="image_url" class="form-label-custom">Direct Image URL <span class="text-danger">*</span></label>
+          <input 
+            type="url" 
+            class="form-control-custom" 
+            id="image_url" 
+            name="image_url" 
+            required 
+            placeholder="https://images.unsplash.com/... or CDN link"
+          >
+          <small class="text-muted d-block mt-1">Direct link to an image file (JPG, PNG, WebP, SVG).</small>
+        </div>
+
+        <div class="mb-4">
+          <label for="display_order" class="form-label-custom">Display Order</label>
+          <input type="number" class="form-control-custom" id="display_order" name="display_order" value="0" min="0">
+          <small class="text-muted d-block mt-1">Lower numbers appear first in the customer gallery.</small>
+        </div>
+
+        <button type="submit" class="btn-custom btn-custom-primary w-100 justify-content-center">
+          <i class="bi bi-plus-circle me-2"></i> Add to Gallery
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Gallery Images List -->
+  <div class="col-12 col-lg-7">
+    <div class="table-card-custom h-100">
+      <div class="table-header-control">
+        <h6 class="fw-bold text-dark mb-0">Attached Gallery Images ({{ len .Images }})</h6>
+      </div>
+      <div class="table-responsive">
+        <table class="table-custom">
+          <thead>
+            <tr>
+              <th>Preview</th>
+              <th>Image URL</th>
+              <th>Order</th>
+              <th>Date Added</th>
+              <th class="text-center">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{ if .Images }}
+              {{ range .Images }}
+              <tr>
+                <td>
+                  <a href="{{ .ImageURL }}" target="_blank" rel="noopener">
+                    <img 
+                      src="{{ .ImageURL }}" 
+                      alt="Product preview" 
+                      style="width: 64px; height: 42px; object-fit: cover; border-radius: 6px; border: 1px solid #E9EFEF;"
+                      loading="lazy"
+                    >
+                  </a>
+                </td>
+                <td>
+                  <div class="text-truncate" style="max-width: 220px;" title="{{ .ImageURL }}">
+                    <a href="{{ .ImageURL }}" target="_blank" rel="noopener" class="text-dark small fw-semibold text-decoration-none">
+                      {{ .ImageURL }}
+                    </a>
+                  </div>
+                </td>
+                <td>
+                  <span class="badge bg-light text-dark border">{{ .DisplayOrder }}</span>
+                </td>
+                <td>
+                  <span class="text-muted small">{{ formatDateShort .CreatedAt }}</span>
+                </td>
+                <td>
+                  <div class="d-flex justify-content-center">
+                    <form method="POST" action="/admin/products/{{ $.Product.ID }}/images/{{ .ID }}/delete" onsubmit="return confirm('Remove this image from gallery?');">
+                      <button type="submit" class="table-btn-action delete border-0 bg-transparent" title="Delete Image">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+              {{ end }}
+            {{ else }}
+              <tr>
+                <td colspan="5" class="text-center py-5 text-muted">
+                  <i class="bi bi-images fs-2 d-block mb-2 text-secondary"></i>
+                  No additional gallery images added yet. The cover thumbnail will be used as the primary image.
+                </td>
+              </tr>
+            {{ end }}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{{ end }}

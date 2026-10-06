@@ -117,6 +117,7 @@ func (h *Handler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 		FullDescription:  r.FormValue("full_description"),
 		Price:            price,
 		ThumbnailURL:     r.FormValue("thumbnail_url"),
+		DemoURL:          r.FormValue("demo_url"),
 		Status:           domain.ProductStatus(r.FormValue("status")),
 	}
 
@@ -128,7 +129,7 @@ func (h *Handler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 			"ActiveNav": "products",
 			"User":      user,
 			"IsEdit":    false,
-			"Product":   &domain.Product{Name: input.Name, Slug: input.Slug, Price: input.Price, Status: input.Status, ShortDescription: input.ShortDescription, FullDescription: input.FullDescription, ThumbnailURL: input.ThumbnailURL},
+			"Product":   &domain.Product{Name: input.Name, Slug: input.Slug, Price: input.Price, Status: input.Status, ShortDescription: input.ShortDescription, FullDescription: input.FullDescription, ThumbnailURL: input.ThumbnailURL, DemoURL: input.DemoURL},
 			"Error":     err.Error(),
 		})
 		return
@@ -186,6 +187,7 @@ func (h *Handler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 		FullDescription:  r.FormValue("full_description"),
 		Price:            price,
 		ThumbnailURL:     r.FormValue("thumbnail_url"),
+		DemoURL:          r.FormValue("demo_url"),
 		Status:           domain.ProductStatus(r.FormValue("status")),
 	}
 
@@ -197,7 +199,7 @@ func (h *Handler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 			"ActiveNav": "products",
 			"User":      user,
 			"IsEdit":    true,
-			"Product":   &domain.Product{ID: id, Name: input.Name, Slug: input.Slug, Price: input.Price, Status: input.Status, ShortDescription: input.ShortDescription, FullDescription: input.FullDescription, ThumbnailURL: input.ThumbnailURL},
+			"Product":   &domain.Product{ID: id, Name: input.Name, Slug: input.Slug, Price: input.Price, Status: input.Status, ShortDescription: input.ShortDescription, FullDescription: input.FullDescription, ThumbnailURL: input.ThumbnailURL, DemoURL: input.DemoURL},
 			"Error":     err.Error(),
 		})
 		return
@@ -320,4 +322,81 @@ func (h *Handler) DeleteProduct(w http.ResponseWriter, r *http.Request) {
 
 	_ = h.service.DeleteProduct(r.Context(), id)
 	http.Redirect(w, r, "/admin/products", http.StatusSeeOther)
+}
+
+// ShowImages renders the gallery images manager for a specific product.
+func (h *Handler) ShowImages(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	prod, err := h.service.GetProduct(r.Context(), id)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	images, _ := h.service.ListProductImages(r.Context(), id)
+	prod.Images = images
+
+	user := auth.UserFromContext(r.Context())
+	_ = h.view.Render(w, "admin", "admin/products/images", map[string]any{
+		"Title":     "Manage Images",
+		"ActiveNav": "products",
+		"User":      user,
+		"Product":   prod,
+		"Images":    images,
+		"Error":     "",
+	})
+}
+
+// AddImage attaches a new preview/gallery image URL to a product.
+func (h *Handler) AddImage(w http.ResponseWriter, r *http.Request) {
+	productID, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Invalid form data", http.StatusBadRequest)
+		return
+	}
+
+	imageURL := strings.TrimSpace(r.FormValue("image_url"))
+	displayOrder, _ := strconv.Atoi(r.FormValue("display_order"))
+
+	_, err = h.service.AddProductImage(r.Context(), productID, imageURL, displayOrder)
+	if err != nil {
+		prod, _ := h.service.GetProduct(r.Context(), productID)
+		images, _ := h.service.ListProductImages(r.Context(), productID)
+		user := auth.UserFromContext(r.Context())
+		w.WriteHeader(http.StatusBadRequest)
+		_ = h.view.Render(w, "admin", "admin/products/images", map[string]any{
+			"Title":     "Manage Images",
+			"ActiveNav": "products",
+			"User":      user,
+			"Product":   prod,
+			"Images":    images,
+			"Error":     err.Error(),
+		})
+		return
+	}
+
+	http.Redirect(w, r, fmt.Sprintf("/admin/products/%d/images", productID), http.StatusSeeOther)
+}
+
+// DeleteImage removes a gallery image attachment from a product.
+func (h *Handler) DeleteImage(w http.ResponseWriter, r *http.Request) {
+	productID, _ := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	imageID, err := strconv.ParseInt(chi.URLParam(r, "imageID"), 10, 64)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	_ = h.service.DeleteProductImage(r.Context(), productID, imageID)
+	http.Redirect(w, r, fmt.Sprintf("/admin/products/%d/images", productID), http.StatusSeeOther)
 }

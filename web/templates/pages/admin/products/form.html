@@ -5,9 +5,19 @@
     <h1 class="page-title">{{ if .IsEdit }}Edit Product{{ else }}Add New Product{{ end }}</h1>
     <p class="page-subtitle">Fill in the product specifications for your digital good.</p>
   </div>
-  <a href="/admin/products" class="btn-custom btn-custom-secondary btn-custom-sm text-decoration-none">
-    <i class="bi bi-arrow-left me-1"></i> Back to Products
-  </a>
+  <div class="d-flex flex-wrap gap-2">
+    {{ if .IsEdit }}
+      <a href="/admin/products/{{ .Product.ID }}/images" class="btn-custom btn-custom-secondary btn-custom-sm text-decoration-none">
+        <i class="bi bi-images me-1"></i> Gallery Images
+      </a>
+      <a href="/admin/products/{{ .Product.ID }}/files" class="btn-custom btn-custom-secondary btn-custom-sm text-decoration-none">
+        <i class="bi bi-folder me-1"></i> Digital Files
+      </a>
+    {{ end }}
+    <a href="/admin/products" class="btn-custom btn-custom-secondary btn-custom-sm text-decoration-none">
+      <i class="bi bi-arrow-left me-1"></i> Back to Products
+    </a>
+  </div>
 </div>
 <!-- END: Page Header Banner -->
 
@@ -98,6 +108,20 @@
             placeholder="https://images.unsplash.com/..."
           >
           <small class="text-muted d-block mt-1">Direct URL to an image preview (JPG, PNG, WebP).</small>
+        </div>
+
+        <!-- Demo Video URL -->
+        <div class="mb-3">
+          <label for="demo_url" class="form-label-custom">Demo Video URL</label>
+          <input 
+            type="url" 
+            class="form-control-custom" 
+            id="demo_url" 
+            name="demo_url" 
+            value="{{ .Product.DemoURL }}" 
+            placeholder="https://www.youtube.com/watch?v=... or Vimeo link"
+          >
+          <small class="text-muted d-block mt-1">Optional video preview URL (YouTube or Vimeo) to be embedded on the product page.</small>
         </div>
 
         <!-- Short Description -->

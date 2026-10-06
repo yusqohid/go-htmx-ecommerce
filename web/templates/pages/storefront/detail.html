@@ -25,14 +25,50 @@
   <div class="row g-4 g-lg-5">
     <!-- Left Column: Product Information & Specifications -->
     <div class="col-12 col-lg-8">
-      <!-- Media Banner / Thumbnail -->
-      <div class="detail-preview-banner">
+      <!-- Media Gallery & Banner -->
+      <div class="detail-gallery-container">
+        {{ $mainImage := "" }}
         {{ if .Product.ThumbnailURL }}
-          <img src="{{ .Product.ThumbnailURL }}" alt="{{ .Product.Name }}">
-        {{ else }}
-          <div class="thumb-placeholder">
-            <i class="bi bi-box-seam thumb-icon"></i>
-            <span class="small fw-semibold">Produk Digital</span>
+          {{ $mainImage = .Product.ThumbnailURL }}
+        {{ else if .Product.Images }}
+          {{ range $i, $img := .Product.Images }}
+            {{ if and (eq $i 0) (not $mainImage) }}
+              {{ $mainImage = $img.ImageURL }}
+            {{ end }}
+          {{ end }}
+        {{ end }}
+
+        <div class="detail-preview-banner">
+          {{ if $mainImage }}
+            <img id="main-gallery-img" src="{{ $mainImage }}" alt="{{ .Product.Name }}">
+          {{ else }}
+            <div class="thumb-placeholder">
+              <i class="bi bi-box-seam thumb-icon"></i>
+              <span class="small fw-semibold">Produk Digital</span>
+            </div>
+          {{ end }}
+        </div>
+
+        {{ if .Product.Images }}
+          <div class="gallery-thumbnails-strip" aria-label="Galeri Gambar Produk">
+            {{ if .Product.ThumbnailURL }}
+              <button type="button"
+                      class="gallery-thumb-btn active"
+                      aria-label="Gambar Sampul"
+                      onclick="selectGalleryImage(this, '{{ .Product.ThumbnailURL }}')">
+                <img src="{{ .Product.ThumbnailURL }}" alt="Thumbnail Sampul">
+              </button>
+            {{ end }}
+            {{ range $idx, $img := .Product.Images }}
+              {{ if ne $img.ImageURL $.Product.ThumbnailURL }}
+                <button type="button"
+                        class="gallery-thumb-btn {{ if and (not $.Product.ThumbnailURL) (eq $idx 0) }}active{{ end }}"
+                        aria-label="Gambar Pratinjau {{ add $idx 1 }}"
+                        onclick="selectGalleryImage(this, '{{ $img.ImageURL }}')">
+                  <img src="{{ $img.ImageURL }}" alt="Pratinjau {{ add $idx 1 }}">
+                </button>
+              {{ end }}
+            {{ end }}
           </div>
         {{ end }}
       </div>
@@ -57,6 +93,32 @@
         </div>
         {{ end }}
       </div>
+
+      <!-- Demo Video Section (if DemoURL provided) -->
+      {{ $videoEmbed := embedVideoURL .Product.DemoURL }}
+      {{ if $videoEmbed }}
+      <div class="mb-5">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h4 class="h5 fw-bold mb-0">
+            <i class="bi bi-play-circle-fill text-danger me-2"></i> Demo &amp; Pratinjau Video
+          </h4>
+          <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2.5 py-1 rounded-pill small">
+            Video Langsung
+          </span>
+        </div>
+        <div class="ratio ratio-16x9 rounded-4 overflow-hidden border shadow-sm bg-dark">
+          <iframe src="{{ $videoEmbed }}"
+                  title="Video Demo {{ .Product.Name }}"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowfullscreen
+                  loading="lazy">
+          </iframe>
+        </div>
+        <p class="text-muted small mt-2 mb-0">
+          <i class="bi bi-info-circle me-1"></i> Tonton demo interaktif untuk melihat tampilan dan fitur produk sebelum membeli.
+        </p>
+      </div>
+      {{ end }}
 
       <!-- Full Description (Rendered Markdown) -->
       <div class="mb-5">
@@ -162,4 +224,22 @@
     </div>
   </div>
 </div>
+
+<script>
+function selectGalleryImage(btn, imageSrc) {
+  var mainImg = document.getElementById('main-gallery-img');
+  if (mainImg && imageSrc) {
+    mainImg.style.opacity = '0.4';
+    setTimeout(function() {
+      mainImg.src = imageSrc;
+      mainImg.style.opacity = '1';
+    }, 120);
+  }
+  var allThumbs = document.querySelectorAll('.gallery-thumb-btn');
+  for (var i = 0; i < allThumbs.length; i++) {
+    allThumbs[i].classList.remove('active');
+  }
+  btn.classList.add('active');
+}
+</script>
 {{ end }}

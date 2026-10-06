@@ -3,10 +3,12 @@ package view_test
 import (
 	"html/template"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"testing/fstest"
 	"time"
 
+	"github.com/yusqohid/go-htmx-ecommerce/internal/domain"
 	"github.com/yusqohid/go-htmx-ecommerce/internal/view"
 	"github.com/yusqohid/go-htmx-ecommerce/web/templates"
 )
@@ -84,9 +86,9 @@ func TestRealStorefrontHomeTemplate(t *testing.T) {
 	v := view.New(templates.FS, false)
 	rec := httptest.NewRecorder()
 	err := v.Render(rec, "public", "storefront/home", map[string]any{
-		"Title":          "Sellora - Test",
-		"ActiveNav":      "home",
-		"TotalPublished": 3,
+		"Title":            "Sellora - Test",
+		"ActiveNav":        "home",
+		"TotalPublished":   3,
 		"FeaturedProducts": []any{},
 	})
 	if err != nil {
@@ -96,4 +98,80 @@ func TestRealStorefrontHomeTemplate(t *testing.T) {
 		t.Fatalf("expected status 200, got %d", rec.Code)
 	}
 }
+
+func TestRealStorefrontDetailTemplate(t *testing.T) {
+	v := view.New(templates.FS, false)
+
+	prod := &domain.Product{
+		ID:               1,
+		Name:             "Go Masterclass Pro",
+		Slug:             "go-masterclass-pro",
+		ShortDescription: "Belajar Go dari pemula hingga mahir",
+		FullDescription:  "# Selamat Datang\n\nPelajari Go secara mendalam.",
+		Price:            150000,
+		ThumbnailURL:     "https://images.unsplash.com/photo-cover",
+		DemoURL:          "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+		Images: []domain.ProductImage{
+			{ID: 1, ProductID: 1, ImageURL: "https://images.unsplash.com/photo-cover", DisplayOrder: 0},
+			{ID: 2, ProductID: 1, ImageURL: "https://images.unsplash.com/photo-2", DisplayOrder: 1},
+		},
+	}
+
+	rec := httptest.NewRecorder()
+	err := v.Render(rec, "public", "storefront/detail", map[string]any{
+		"Title":      prod.Name + " - Sellora",
+		"ActiveNav":  "catalog",
+		"Product":    prod,
+		"Files":      []domain.ProductFile{},
+		"TotalFiles": 0,
+		"TotalSize":  int64(0),
+	})
+	if err != nil {
+		t.Fatalf("failed to render real storefront/detail template: %v", err)
+	}
+	if rec.Code != 200 {
+		t.Fatalf("expected status 200, got %d", rec.Code)
+	}
+
+	body := rec.Body.String()
+	// Verify gallery thumbnail rendered
+	if !strings.Contains(body, "gallery-thumbnails-strip") {
+		t.Errorf("expected body to contain gallery-thumbnails-strip")
+	}
+	if !strings.Contains(body, "selectGalleryImage") {
+		t.Errorf("expected body to contain selectGalleryImage script")
+	}
+	// Verify video embed iframe rendered
+	if !strings.Contains(body, "youtube-nocookie.com/embed/dQw4w9WgXcQ") {
+		t.Errorf("expected body to contain youtube embed URL")
+	}
+}
+
+func TestRealAdminProductImagesTemplate(t *testing.T) {
+	v := view.New(templates.FS, false)
+
+	prod := &domain.Product{
+		ID:   1,
+		Name: "Test Product",
+	}
+	images := []domain.ProductImage{
+		{ID: 1, ProductID: 1, ImageURL: "https://example.com/test.jpg", DisplayOrder: 0},
+	}
+
+	rec := httptest.NewRecorder()
+	err := v.Render(rec, "admin", "admin/products/images", map[string]any{
+		"Title":     "Product Images",
+		"ActiveNav": "products",
+		"Product":   prod,
+		"Images":    images,
+		"Error":     "",
+	})
+	if err != nil {
+		t.Fatalf("failed to render real admin/products/images template: %v", err)
+	}
+	if rec.Code != 200 {
+		t.Fatalf("expected status 200, got %d", rec.Code)
+	}
+}
+
 

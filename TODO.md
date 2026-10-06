@@ -1,33 +1,46 @@
 # TODO: Future Improvements & Technical Debt
 
-This document tracks planned architectural, UI/UX, and functional enhancements to be addressed in future iterations.
+This document tracks planned architectural, UI/UX, and functional enhancements. It has been updated to reflect the completion of the MVP and the Spark Admin Pro UI overhaul.
 
 ---
 
-## 🎨 UI / UX Enhancements (Future Sprints)
+## ✅ Completed (MVP & UI Overhaul)
 
-- [ ] **Storefront Visual Polish & Design System:**
-  - Enhance public storefront typography, spacing, and micro-interactions.
-  - Implement full design system tokens or dedicated frontend theme beyond basic Bootstrap layout.
-  - Add skeleton loaders for HTMX catalog search and filtering (`hx-indicator`).
+- [x] **Storefront Visual Polish & Design System:**
+  - [x] Enhance public storefront typography, spacing, and micro-interactions (Aligned with Spark Admin Pro).
+  - [x] Implement full design system tokens (Tokens CSS integrated).
+  - [x] Add loading indicators for HTMX catalog search (`hx-indicator`).
+- [x] **Product Detail Page Improvements:**
+  - [x] Rich Markdown rendering for product descriptions (`RenderMarkdown` implemented).
+- [x] **Customer Dashboard & Navigation:**
+  - [x] Polish customer order history and digital download shelf UI.
+- [x] **Core Features:**
+  - [x] Email notifications upon successful order payment (receipt & download links) via `internal/email`.
+  - [x] LYNK and Midtrans webhook integration.
+
+---
+
+## 🎯 Next Priorities (High Impact)
+
+- [ ] **Product Media Gallery & Carousel:**
+  - Support multiple product preview images (requires DB update for `product_images`).
+  - Interactive carousel/lightbox on the product detail page.
+  - Add video/demo embed player for digital goods (e.g., YouTube/Vimeo preview links).
+- [ ] **Discount & Promotion Engine:**
+  - Support automated discount codes and coupons (fixed amount or percentage).
+  - Add coupon input field in the checkout flow.
+
+---
+
+## 🚀 Future Feature Enhancements (Backlog)
+
+- [ ] **Customer Trust & Engagement:**
+  - Customer review and rating display component (only for verified buyers).
+- [ ] **Infrastructural Scaling:**
+  - S3 / Cloudflare R2 storage adapter for digital product assets when server storage limit is approached.
+- [ ] **UI/UX & Customer Experience:**
   - Add dark mode / theme toggle support.
-
-- [ ] **Product Detail Page Improvements:**
-  - Support multiple product preview images and interactive carousel/lightbox.
-  - Add video/demo embed player for digital goods (e.g., video tutorials, preview clips).
-  - Rich Markdown rendering for product descriptions (converting markdown to sanitized HTML).
-  - Customer review and rating display component.
-
-- [ ] **Customer Dashboard & Navigation:**
-  - Polish customer order history and digital download shelf UI.
-  - Add download progress indicators and expiration notices (if applicable).
+  - Add download progress indicators and expiration notices for downloaded files.
   - Enhance mobile drawer navigation and touch responsiveness.
-
----
-
-## 🚀 Future Feature Enhancements
-
-- [ ] Support automated discount codes and coupons.
-- [ ] Email notifications upon successful order payment (receipt & download links).
-- [ ] Multi-currency display / automated currency conversion.
-- [ ] S3/Cloudflare R2 storage adapter for digital product assets when server storage limit is approached.
+- [ ] **Business Logic:**
+  - Multi-currency display / automated currency conversion.

@@ -16,8 +16,8 @@
   <!-- Breadcrumb Navigation -->
   <nav aria-label="breadcrumb" class="mb-4">
     <ol class="breadcrumb mb-0 small">
-      <li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted">Home</a></li>
-      <li class="breadcrumb-item"><a href="/products" class="text-decoration-none text-muted">Catalog</a></li>
+      <li class="breadcrumb-item"><a href="/" class="text-muted">Beranda</a></li>
+      <li class="breadcrumb-item"><a href="/products" class="text-muted">Katalog</a></li>
       <li class="breadcrumb-item active text-dark fw-medium" aria-current="page">{{ .Product.Name }}</li>
     </ol>
   </nav>
@@ -32,56 +32,56 @@
         {{ else }}
           <div class="thumb-placeholder">
             <i class="bi bi-box-seam thumb-icon"></i>
-            <span class="small fw-semibold opacity-90">Production Ready Digital Kit</span>
+            <span class="small fw-semibold">Produk Digital</span>
           </div>
         {{ end }}
       </div>
 
       <!-- Title & Short Description -->
-      <h1 class="fw-bold mb-2">{{ .Product.Name }}</h1>
-      <p class="lead text-muted mb-4">{{ .Product.ShortDescription }}</p>
+      <h1 class="h2 fw-bold mb-2">{{ .Product.Name }}</h1>
+      <p class="lead text-muted mb-4 fs-6">{{ .Product.ShortDescription }}</p>
 
       <div class="d-flex flex-wrap gap-4 text-muted small pb-4 mb-4 border-bottom">
         <div>
           <i class="bi bi-calendar3 me-1 text-success"></i>
-          Released: <strong>{{ formatDateShort .Product.CreatedAt }}</strong>
+          Rilis: <strong>{{ formatDateShort .Product.CreatedAt }}</strong>
         </div>
         <div>
           <i class="bi bi-file-earmark-zip me-1 text-success"></i>
-          Package: <strong>{{ .TotalFiles }} file{{ if ne .TotalFiles 1 }}s{{ end }}</strong>
+          Paket: <strong>{{ .TotalFiles }} file</strong>
         </div>
         {{ if gt .TotalSize 0 }}
         <div>
           <i class="bi bi-hdd-network me-1 text-success"></i>
-          Total Size: <strong>{{ formatBytes .TotalSize }}</strong>
+          Ukuran Total: <strong>{{ formatBytes .TotalSize }}</strong>
         </div>
         {{ end }}
       </div>
 
-      <!-- Full Description -->
+      <!-- Full Description (Rendered Markdown) -->
       <div class="mb-5">
-        <h4 class="fw-bold mb-3">Product Overview</h4>
-        <div class="text-secondary lh-lg markdown-body">
+        <h4 class="h5 fw-bold mb-3">Deskripsi Produk</h4>
+        <div class="text-secondary lh-lg markdown-body bg-white p-4 rounded-4 border">
           {{ if .Product.FullDescription }}
             {{ renderMarkdown .Product.FullDescription }}
           {{ else }}
-            <p class="text-muted fst-italic">No extended documentation provided for this product.</p>
+            <p class="text-muted fst-italic mb-0">Belum ada dokumentasi tambahan untuk produk ini.</p>
           {{ end }}
         </div>
       </div>
 
       <!-- Digital Files Specifications Card -->
-      <div class="card border-0 shadow-sm p-4 rounded-4 mb-4 bg-white border">
+      <div class="spark-card mb-4">
         <div class="d-flex align-items-center justify-content-between mb-3">
-          <h5 class="fw-bold mb-0">
-            <i class="bi bi-folder-check text-success me-2"></i> Included Digital Assets
+          <h5 class="h6 fw-bold mb-0">
+            <i class="bi bi-folder-check text-success me-2"></i> File Termasuk
           </h5>
           <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1 rounded-pill small">
-            {{ .TotalFiles }} {{ if eq .TotalFiles 1 }}Asset{{ else }}Assets{{ end }}
+            {{ .TotalFiles }} File
           </span>
         </div>
         <p class="text-muted small mb-3">
-          The following files are packaged with this purchase and will be unlocked for direct download immediately upon verified payment.
+          File berikut akan langsung terbuka untuk diunduh setelah pembayaran terkonfirmasi.
         </p>
 
         {{ if .Files }}
@@ -98,7 +98,7 @@
                       <span>{{ .MIMEType }}</span>
                       {{ if .Checksum }}
                         <span>&bull;</span>
-                        <span class="hash-pill" title="SHA-256: {{ .Checksum }}">
+                        <span class="font-monospace text-muted small" title="SHA-256: {{ .Checksum }}">
                           SHA-256: {{ printf "%.10s..." .Checksum }}
                         </span>
                       {{ end }}
@@ -106,14 +106,14 @@
                   </div>
                 </div>
                 <div>
-                  <span class="badge bg-light text-dark border rounded-pill px-2.5 py-1 small">v{{ .Version }}</span>
+                  <span class="badge bg-white text-dark border rounded-pill px-2.5 py-1 small">v{{ .Version }}</span>
                 </div>
               </div>
             {{ end }}
           </div>
         {{ else }}
           <div class="p-3 bg-light rounded-3 text-muted small text-center">
-            Files are being prepared for release. Check back shortly.
+            File sedang dipersiapkan dan belum dilampirkan.
           </div>
         {{ end }}
       </div>
@@ -123,10 +123,10 @@
     <div class="col-12 col-lg-4">
       <div class="purchase-sticky-card">
         <div class="d-flex justify-content-between align-items-center mb-2">
-          <span class="purchase-badge">
-            <i class="bi bi-shield-check"></i> Single-Vendor
+          <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 small">
+            <i class="bi bi-check-circle me-1"></i> Tersedia
           </span>
-          <span class="badge bg-light text-muted border small">Commercial License</span>
+          <span class="text-muted small">Akses Langsung</span>
         </div>
 
         <div class="d-flex align-items-baseline gap-2 mb-3 mt-3">
@@ -135,38 +135,29 @@
 
         <div class="alert bg-success-subtle text-success border-0 py-2.5 px-3 small rounded-3 mb-4 d-flex align-items-center gap-2">
           <i class="bi bi-lightning-charge-fill"></i>
-          <span>Instant Download unlocked after checkout</span>
+          <span>Unduhan instan terbuka setelah checkout</span>
         </div>
 
         <!-- Checkout Action -->
-        <a href="/checkout/{{ .Product.ID }}" class="btn btn-success btn-lg w-100 rounded-pill py-3 fw-bold shadow-sm mb-3">
-          Proceed to Checkout &bull; {{ formatMoney .Product.Price }}
+        <a href="/checkout/{{ .Product.ID }}" class="btn-spark-primary w-100 py-3 fw-bold mb-3 fs-6">
+          Beli Sekarang &bull; {{ formatMoney .Product.Price }}
         </a>
 
-        <!-- Trust Signals Checklist -->
-        <ul class="purchase-checklist">
-          <li class="purchase-checklist-item">
-            <i class="bi bi-check-circle-fill"></i>
-            <span>Instant delivery to your customer account</span>
+        <!-- Guarantees Checklist -->
+        <ul class="list-unstyled d-flex flex-column gap-2 small text-muted mb-0 mt-3 pt-3 border-top">
+          <li class="d-flex align-items-center gap-2">
+            <i class="bi bi-check-circle-fill text-success"></i>
+            <span>File langsung tersedia di akun pembeli</span>
           </li>
-          <li class="purchase-checklist-item">
-            <i class="bi bi-check-circle-fill"></i>
-            <span>Verified cryptographic file integrity</span>
+          <li class="d-flex align-items-center gap-2">
+            <i class="bi bi-check-circle-fill text-success"></i>
+            <span>Verifikasi integritas file SHA-256</span>
           </li>
-          <li class="purchase-checklist-item">
-            <i class="bi bi-check-circle-fill"></i>
-            <span>Lifetime access &amp; unlimited re-downloads</span>
-          </li>
-          <li class="purchase-checklist-item">
-            <i class="bi bi-check-circle-fill"></i>
-            <span>Direct support from the product author</span>
+          <li class="d-flex align-items-center gap-2">
+            <i class="bi bi-check-circle-fill text-success"></i>
+            <span>Dukungan langsung dari pengelola Sellora</span>
           </li>
         </ul>
-
-        <div class="text-center text-muted small pt-3 mt-3 border-top">
-          <i class="bi bi-lock-fill me-1 text-secondary"></i>
-          <span>Encrypted payment &bull; Powered by Sellora</span>
-        </div>
       </div>
     </div>
   </div>

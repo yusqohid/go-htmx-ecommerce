@@ -1,9 +1,9 @@
 {{ define "content" }}
 <div class="w-100" style="max-width: 440px;">
-  <div class="auth-card">
+  <div class="spark-card">
     <div class="text-center mb-4">
-      <h1 class="h4 fw-bold text-dark mb-1">Create your account</h1>
-      <p class="text-muted small">Get instant access to digital downloads and orders</p>
+      <h1 class="h4 fw-bold text-dark mb-1">Daftar Akun Baru</h1>
+      <p class="text-muted small">Dapatkan akses langsung ke produk digital dan unduhan Anda</p>
     </div>
 
     {{ if .Error }}
@@ -19,7 +19,7 @@
       {{ end }}
 
       <div class="mb-3">
-        <label for="name" class="form-label text-uppercase fw-bold text-secondary" style="font-size: 0.7rem; letter-spacing: 0.05em;">Full Name</label>
+        <label for="name" class="form-label small fw-semibold text-secondary">Nama Lengkap</label>
         <input 
           type="text" 
           id="name" 
@@ -27,13 +27,13 @@
           value="{{ .Name }}" 
           required 
           autocomplete="name"
-          placeholder="John Doe"
+          placeholder="Nama Lengkap"
           class="form-control rounded-3 py-2 px-3 fs-6"
         >
       </div>
 
       <div class="mb-3">
-        <label for="email" class="form-label text-uppercase fw-bold text-secondary" style="font-size: 0.7rem; letter-spacing: 0.05em;">Email Address</label>
+        <label for="email" class="form-label small fw-semibold text-secondary">Alamat Email</label>
         <input 
           type="email" 
           id="email" 
@@ -41,13 +41,13 @@
           value="{{ .Email }}" 
           required 
           autocomplete="email"
-          placeholder="you@example.com"
+          placeholder="nama@email.com"
           class="form-control rounded-3 py-2 px-3 fs-6"
         >
       </div>
 
       <div class="mb-3">
-        <label for="password" class="form-label text-uppercase fw-bold text-secondary" style="font-size: 0.7rem; letter-spacing: 0.05em;">Password</label>
+        <label for="password" class="form-label small fw-semibold text-secondary">Kata Sandi</label>
         <input 
           type="password" 
           id="password" 
@@ -55,13 +55,13 @@
           required 
           minlength="8"
           autocomplete="new-password"
-          placeholder="At least 8 characters"
+          placeholder="Minimal 8 karakter"
           class="form-control rounded-3 py-2 px-3 fs-6"
         >
       </div>
 
       <div class="mb-4">
-        <label for="password_confirm" class="form-label text-uppercase fw-bold text-secondary" style="font-size: 0.7rem; letter-spacing: 0.05em;">Confirm Password</label>
+        <label for="password_confirm" class="form-label small fw-semibold text-secondary">Konfirmasi Kata Sandi</label>
         <input 
           type="password" 
           id="password_confirm" 
@@ -69,22 +69,22 @@
           required 
           minlength="8"
           autocomplete="new-password"
-          placeholder="Repeat password"
+          placeholder="Ulangi kata sandi"
           class="form-control rounded-3 py-2 px-3 fs-6"
         >
       </div>
 
       <button 
         type="submit" 
-        class="btn btn-success w-100 py-2 fs-6 fw-semibold rounded-3 shadow-sm mb-3"
+        class="btn btn-spark-primary w-100 py-2.5 fs-6 fw-semibold mb-3"
       >
-        Register Account
+        Daftar Akun
       </button>
     </form>
 
     <div class="pt-3 border-top text-center text-muted small">
-      Already have an account? 
-      <a href="/login" class="text-success text-decoration-none fw-semibold ms-1">Sign In</a>
+      Sudah memiliki akun? 
+      <a href="/login" class="text-dark text-decoration-none fw-semibold ms-1">Masuk</a>
     </div>
   </div>
 </div>

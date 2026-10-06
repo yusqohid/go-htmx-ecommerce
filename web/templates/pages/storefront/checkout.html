@@ -6,28 +6,28 @@
       <!-- Breadcrumbs -->
       <nav aria-label="breadcrumb" class="mb-4">
         <ol class="breadcrumb mb-0 small">
-          <li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted">Home</a></li>
-          <li class="breadcrumb-item"><a href="/products" class="text-decoration-none text-muted">Catalog</a></li>
-          <li class="breadcrumb-item"><a href="/products/{{ .Product.Slug }}" class="text-decoration-none text-muted">{{ .Product.Name }}</a></li>
+          <li class="breadcrumb-item"><a href="/" class="text-muted">Beranda</a></li>
+          <li class="breadcrumb-item"><a href="/products" class="text-muted">Katalog</a></li>
+          <li class="breadcrumb-item"><a href="/products/{{ .Product.Slug }}" class="text-muted">{{ .Product.Name }}</a></li>
           <li class="breadcrumb-item active text-dark fw-medium" aria-current="page">Checkout</li>
         </ol>
       </nav>
 
       {{ if .AlreadyOwned }}
-        <div class="card border-0 shadow-sm p-4 rounded-4 text-center mb-4">
+        <div class="spark-card text-center mb-4">
           <div class="mb-3">
             <i class="bi bi-check-circle-fill text-success" style="font-size: 3.5rem;"></i>
           </div>
-          <h4 class="fw-bold mb-2">You Already Own This Product!</h4>
+          <h4 class="fw-bold mb-2">Anda Sudah Memiliki Produk Ini!</h4>
           <p class="text-muted small mb-4">
-            You have previously purchased <strong>{{ .Product.Name }}</strong>. You have lifetime access to its digital downloads without needing to pay again.
+            Anda telah membeli <strong>{{ .Product.Name }}</strong> sebelumnya. Anda dapat langsung mengunduh file produk dari akun Anda tanpa perlu membayar lagi.
           </p>
           <div class="d-flex justify-content-center gap-3">
-            <a href="/products/{{ .Product.Slug }}" class="btn btn-outline-success rounded-pill px-4">
-              View Product Specs
+            <a href="/products/{{ .Product.Slug }}" class="btn-spark-outline px-4">
+              Lihat Detail Produk
             </a>
-            <a href="/products" class="btn btn-success rounded-pill px-4">
-              Browse More Products
+            <a href="/account/orders" class="btn-spark-primary px-4">
+              Lihat Pesanan Saya
             </a>
           </div>
         </div>
@@ -40,22 +40,22 @@
           </div>
         {{ end }}
 
-        <div class="card border-light shadow-sm p-4 rounded-4 mb-4">
-          <h3 class="fw-bold mb-1">Order Summary</h3>
-          <p class="text-muted small mb-4">Review your purchase details before proceeding to payment.</p>
+        <div class="spark-card mb-4">
+          <h3 class="h4 fw-bold mb-1">Ringkasan Pesanan</h3>
+          <p class="text-muted small mb-4">Periksa rincian pembelian Anda sebelum melanjutkan ke pembayaran.</p>
 
           <!-- Product Item Row -->
-          <div class="d-flex align-items-center justify-content-between p-3 bg-light rounded-3 mb-4">
+          <div class="d-flex align-items-center justify-content-between p-3 bg-light rounded-3 mb-4 border">
             <div class="d-flex align-items-center gap-3">
-              <div class="rounded-3 bg-success-subtle text-success p-2 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                <i class="bi bi-box-seam fs-4"></i>
+              <div class="rounded-3 bg-white text-dark p-2 d-flex align-items-center justify-content-center border" style="width: 44px; height: 44px;">
+                <i class="bi bi-box-seam fs-5"></i>
               </div>
               <div>
                 <h6 class="fw-bold mb-0 text-dark">{{ .Product.Name }}</h6>
-                <span class="text-muted small">Single-Vendor Digital License</span>
+                <span class="text-muted small">Produk Digital</span>
               </div>
             </div>
-            <div class="fw-bold fs-5 text-dark">
+            <div class="fw-bold fs-5 text-dark product-price">
               {{ formatMoney .Product.Price }}
             </div>
           </div>
@@ -63,44 +63,43 @@
           <!-- Customer Info -->
           <div class="border-top border-bottom py-3 mb-4">
             <div class="d-flex justify-content-between text-muted small mb-2">
-              <span>Customer Name:</span>
+              <span>Nama Pembeli:</span>
               <strong class="text-dark">{{ .User.Name }}</strong>
             </div>
             <div class="d-flex justify-content-between text-muted small mb-2">
-              <span>Delivery Email:</span>
+              <span>Email Akun:</span>
               <strong class="text-dark">{{ .User.Email }}</strong>
             </div>
             <div class="d-flex justify-content-between text-muted small">
-              <span>Payment Gateway:</span>
-              <span class="badge bg-secondary-subtle text-dark border">{{ .PaymentProvider }}</span>
+              <span>Metode Pembayaran:</span>
+              <span class="badge bg-light text-dark border">{{ .PaymentProvider }}</span>
             </div>
           </div>
 
           <!-- Total Due -->
           <div class="d-flex justify-content-between align-items-baseline mb-4">
-            <span class="fs-5 fw-bold text-dark">Total Amount</span>
-            <span class="fs-2 fw-bold text-success">{{ formatMoney .Product.Price }}</span>
+            <span class="fs-5 fw-bold text-dark">Total Pembayaran</span>
+            <span class="fs-2 fw-bold text-dark product-price">{{ formatMoney .Product.Price }}</span>
           </div>
 
           <!-- Checkout Form Submit -->
           <form id="checkout-form" method="POST" action="/checkout/{{ .Product.ID }}">
             <input type="hidden" name="csrf_token" value="">
-            <button id="pay-button" type="submit" class="btn btn-success btn-lg w-100 rounded-pill py-3 fw-bold shadow-sm mb-3">
-              <i class="bi bi-lock-fill me-1"></i> Proceed to Secure Payment
+            <button id="pay-button" type="submit" class="btn-spark-primary w-100 py-3 fw-bold mb-3 fs-6">
+              <i class="bi bi-lock-fill me-1"></i> Lanjut ke Pembayaran
             </button>
           </form>
 
           <div class="text-center">
             <a href="/products/{{ .Product.Slug }}" class="text-muted small text-decoration-none">
-              &larr; Cancel and return to product
+              &larr; Batalkan dan kembali ke produk
             </a>
           </div>
         </div>
 
-        <!-- Security Badge Note -->
         <div class="text-center text-muted small">
           <i class="bi bi-shield-lock-fill text-success me-1"></i>
-          Encrypted 256-bit payment transaction. No banking credentials stored on our server.
+          Pembayaran diproses secara aman melalui gerbang pembayaran resmi.
         </div>
       {{ end }}
 
@@ -120,7 +119,7 @@
       if (window.snap && typeof window.snap.pay === "function") {
         e.preventDefault();
         payBtn.disabled = true;
-        payBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Connecting to Midtrans...';
+        payBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Menghubungi Midtrans...';
 
         try {
           const csrfToken = (typeof getCSRFToken === "function") ? getCSRFToken() : "";
@@ -133,7 +132,7 @@
           });
 
           if (!resp.ok) {
-            throw new Error("Checkout failed with status " + resp.status);
+            throw new Error("Checkout gagal dengan status " + resp.status);
           }
 
           const data = await resp.json();
@@ -146,13 +145,13 @@
                 window.location.href = "/orders/" + data.order_reference + "/success";
               },
               onError: function(result) {
-                alert("Payment error: " + (result.status_message || "Transaction was not completed."));
+                alert("Kesalahan pembayaran: " + (result.status_message || "Transaksi tidak selesai."));
                 payBtn.disabled = false;
-                payBtn.innerHTML = '<i class="bi bi-lock-fill me-1"></i> Proceed to Secure Payment';
+                payBtn.innerHTML = '<i class="bi bi-lock-fill me-1"></i> Lanjut ke Pembayaran';
               },
               onClose: function() {
                 payBtn.disabled = false;
-                payBtn.innerHTML = '<i class="bi bi-lock-fill me-1"></i> Proceed to Secure Payment';
+                payBtn.innerHTML = '<i class="bi bi-lock-fill me-1"></i> Lanjut ke Pembayaran';
               }
             });
             return;
@@ -163,9 +162,9 @@
             return;
           }
         } catch (err) {
-          console.error("Snap error, falling back to full redirect:", err);
+          console.error("Snap error, dialihkan ke redirect standar:", err);
           payBtn.disabled = false;
-          payBtn.innerHTML = '<i class="bi bi-lock-fill me-1"></i> Proceed to Secure Payment';
+          payBtn.innerHTML = '<i class="bi bi-lock-fill me-1"></i> Lanjut ke Pembayaran';
           form.submit();
         }
       }

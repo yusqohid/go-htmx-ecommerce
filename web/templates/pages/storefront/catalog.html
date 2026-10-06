@@ -4,9 +4,9 @@
   <!-- Page Header (Spark Pro Style) -->
   <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
     <div>
-      <h1 class="h3 fw-bold mb-1">Katalog Produk Digital</h1>
-      <p class="text-muted small mb-0">
-        Pilihan template, boilerplate, dan aset digital siap pakai untuk proyek Anda.
+      <h1 class="h3 fw-bold text-main mb-1">Katalog Produk Digital</h1>
+      <p class="text-muted-green small mb-0">
+        Pilihan template, boilerplate, dan aset digital siap pakai untuk mempercepat proyek Anda.
       </p>
     </div>
   </div>
@@ -40,7 +40,7 @@
   <!-- Reactive Product Grid Container (HTMX Target & Select) -->
   <div id="product-grid">
     <div class="d-flex align-items-center justify-content-between mb-4 pb-2 border-bottom">
-      <div class="text-muted small">
+      <div class="text-muted-green small">
         Menampilkan <strong>{{ len .Products }}</strong> dari <strong>{{ .Total }}</strong> produk
         {{ if .Search }}
           untuk pencarian <span class="badge bg-white text-dark border ms-1">&ldquo;{{ .Search }}&rdquo;</span>
@@ -55,40 +55,51 @@
     </div>
 
     {{ if .Products }}
+      <!-- Grid Cards from Spark Pro UI-Cards (Creative Content & Feature Cards) -->
       <div class="row g-4 mb-5">
         {{ range .Products }}
           <div class="col-12 col-md-6 col-lg-4">
-            <div class="card pricing-card shadow-sm h-100 d-flex flex-column justify-content-between">
-              <div>
-                <div class="product-card-thumb mb-3">
-                  {{ if .ThumbnailURL }}
-                    <img src="{{ .ThumbnailURL }}" alt="{{ .Name }}" loading="lazy">
-                  {{ else }}
-                    <div class="thumb-placeholder">
-                      <i class="bi bi-box-seam thumb-icon"></i>
-                      <span class="small fw-semibold">Produk Digital</span>
-                    </div>
-                  {{ end }}
+            <div class="card border-light shadow-sm overflow-hidden h-100 card-rounded">
+              <!-- Thumbnail Cover Image -->
+              {{ if .ThumbnailURL }}
+                <img src="{{ .ThumbnailURL }}" class="card-img-top card-cover-img" alt="{{ .Name }}" loading="lazy">
+              {{ else }}
+                <div class="card-cover-img d-flex flex-column align-items-center justify-content-center bg-light text-muted">
+                  <i class="bi bi-box-seam fs-2 mb-1 text-muted-green"></i>
+                  <span class="fs-12 fw-semibold text-muted-green">Produk Digital</span>
                 </div>
-                <div class="p-3 pt-0">
-                  <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span class="badge bg-light text-dark border fw-bold px-2.5 py-1 small">DIGITAL ASSET</span>
+              {{ end }}
+
+              <!-- Card Body -->
+              <div class="card-body d-flex flex-column justify-content-between p-3">
+                <div>
+                  <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
+                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill fw-semibold fs-11">
+                      Digital Asset
+                    </span>
+                    <span class="text-muted-green fs-12">
+                      <i class="bi bi-shield-check me-1"></i>Tervalidasi
+                    </span>
                   </div>
-                  <h5 class="fw-bold text-main mb-1">
+
+                  <h6 class="card-title text-main fw-bold mb-2">
                     <a href="/products/{{ .Slug }}" class="text-decoration-none text-dark">{{ .Name }}</a>
-                  </h5>
-                  <p class="text-muted-green small mb-3">{{ .ShortDescription }}</p>
-
-                  <div class="d-flex align-items-baseline mb-3">
-                    <span class="pricing-amount product-price">{{ formatMoney .Price }}</span>
-                  </div>
+                  </h6>
+                  <p class="card-text text-muted-green small mb-3">
+                    {{ .ShortDescription }}
+                  </p>
                 </div>
-              </div>
 
-              <div class="p-3 pt-0">
-                <a href="/products/{{ .Slug }}" class="btn-spark-primary w-100 py-2.5 small fw-semibold">
-                  Lihat Detail Produk
-                </a>
+                <!-- Card Footer Action Row -->
+                <div class="d-flex align-items-center justify-content-between pt-3 mt-2 border-top">
+                  <div>
+                    <span class="fs-11 text-muted-green d-block">Harga</span>
+                    <span class="fw-bold text-main fs-5 product-price">{{ formatMoney .Price }}</span>
+                  </div>
+                  <a href="/products/{{ .Slug }}" class="btn btn-forest-primary btn-sm px-3">
+                    Lihat Detail &rarr;
+                  </a>
+                </div>
               </div>
             </div>
           </div>

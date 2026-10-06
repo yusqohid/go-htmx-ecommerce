@@ -1,20 +1,18 @@
 {{ define "content" }}
 
 <div class="container py-5">
-  <!-- Page Header -->
-  <div class="text-center mb-5">
-    <div class="hero-badge mx-auto mb-3">
-      <span class="hero-badge-dot"></span>
-      <span>Browse Verified Kits</span>
+  <!-- Page Header (Spark Pro Style) -->
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+      <h1 class="h3 fw-bold text-main mb-1">Katalog Produk Digital</h1>
+      <p class="text-muted-green small mb-0">
+        Pilihan template, boilerplate, dan aset digital siap pakai untuk mempercepat proyek Anda.
+      </p>
     </div>
-    <h1 class="fw-bold mb-2">Digital Product Catalog</h1>
-    <p class="text-muted max-w-md mx-auto">
-      Explore our complete collection of curated developer kits, boilerplates, and production-ready source code templates.
-    </p>
   </div>
 
-  <!-- Search Bar with Live HTMX Trigger -->
-  <div class="row justify-content-center mb-5">
+  <!-- Search Bar with Live HTMX Trigger (Spark Pro Style) -->
+  <div class="row justify-content-center mb-4">
     <div class="col-12 col-md-8 col-lg-6">
       <div class="catalog-search-wrapper">
         <i class="bi bi-search catalog-search-icon"></i>
@@ -22,8 +20,8 @@
           type="search" 
           name="q" 
           value="{{ .Search }}"
-          placeholder="Search kits, templates, guides..."
-          class="form-control catalog-search-input"
+          placeholder="Cari produk digital..."
+          class="catalog-search-input"
           hx-get="/products"
           hx-trigger="keyup changed delay:300ms, search"
           hx-target="#product-grid"
@@ -32,8 +30,8 @@
           hx-push-url="true"
           autocomplete="off"
         >
-        <div id="search-spinner" class="spinner-border spinner-border-sm text-success position-absolute end-0 top-50 translate-middle-y me-3 htmx-indicator" role="status">
-          <span class="visually-hidden">Loading...</span>
+        <div id="search-spinner" class="spinner-border spinner-border-sm catalog-search-spinner htmx-indicator" role="status">
+          <span class="visually-hidden">Memuat...</span>
         </div>
       </div>
     </div>
@@ -42,45 +40,66 @@
   <!-- Reactive Product Grid Container (HTMX Target & Select) -->
   <div id="product-grid">
     <div class="d-flex align-items-center justify-content-between mb-4 pb-2 border-bottom">
-      <div class="text-muted small">
-        Showing <strong>{{ len .Products }}</strong> of <strong>{{ .Total }}</strong> published kits
+      <div class="text-muted-green small">
+        Menampilkan <strong>{{ len .Products }}</strong> dari <strong>{{ .Total }}</strong> produk
         {{ if .Search }}
-          for search term <span class="badge bg-light text-dark border ms-1">&ldquo;{{ .Search }}&rdquo;</span>
+          untuk pencarian <span class="badge bg-white text-dark border ms-1">&ldquo;{{ .Search }}&rdquo;</span>
         {{ end }}
       </div>
 
       {{ if .Search }}
-        <a href="/products" class="btn btn-sm btn-outline-secondary rounded-pill px-3 small">
-          <i class="bi bi-x-circle me-1"></i> Clear Filter
+        <a href="/products" class="btn-spark-outline py-1 px-3 small">
+          <i class="bi bi-x-circle me-1"></i> Hapus Filter
         </a>
       {{ end }}
     </div>
 
     {{ if .Products }}
+      <!-- Grid Cards from Spark Pro UI-Cards (Creative Content & Feature Cards) -->
       <div class="row g-4 mb-5">
         {{ range .Products }}
           <div class="col-12 col-md-6 col-lg-4">
-            <div class="product-card">
-              <span class="product-card-pill">Digital Kit</span>
-              <div class="product-card-thumb">
+            <div class="card border-light shadow-sm overflow-hidden h-100 card-rounded">
+              <!-- Thumbnail Cover Container with Consistent Aspect Ratio -->
+              <div class="card-cover-wrapper">
                 {{ if .ThumbnailURL }}
-                  <img src="{{ .ThumbnailURL }}" alt="{{ .Name }}" loading="lazy">
+                  <img src="{{ .ThumbnailURL }}" class="card-img-top card-cover-img" alt="{{ .Name }}" loading="lazy">
                 {{ else }}
-                  <div class="thumb-placeholder">
-                    <i class="bi bi-box-seam thumb-icon"></i>
-                    <span class="small fw-medium opacity-75">Production Asset</span>
+                  <div class="card-cover-placeholder">
+                    <i class="bi bi-box-seam fs-2 mb-1 text-muted-green"></i>
+                    <span class="fs-12 fw-semibold text-muted-green">Produk Digital</span>
                   </div>
                 {{ end }}
               </div>
-              <div class="product-card-body">
-                <h3 class="product-card-title">
-                  <a href="/products/{{ .Slug }}">{{ .Name }}</a>
-                </h3>
-                <p class="product-card-desc">{{ .ShortDescription }}</p>
-                <div class="product-card-footer">
-                  <span class="product-price">{{ formatMoney .Price }}</span>
-                  <a href="/products/{{ .Slug }}" class="btn btn-sm btn-outline-success rounded-pill px-3 fw-medium">
-                    View Details
+
+              <!-- Card Body -->
+              <div class="card-body d-flex flex-column justify-content-between p-3">
+                <div>
+                  <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
+                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill fw-semibold fs-11">
+                      Digital Asset
+                    </span>
+                    <span class="text-muted-green fs-12">
+                      <i class="bi bi-shield-check me-1"></i>Tervalidasi
+                    </span>
+                  </div>
+
+                  <h6 class="card-title text-main fw-bold mb-2">
+                    <a href="/products/{{ .Slug }}" class="text-decoration-none text-dark">{{ .Name }}</a>
+                  </h6>
+                  <p class="card-text text-muted-green small mb-3">
+                    {{ .ShortDescription }}
+                  </p>
+                </div>
+
+                <!-- Card Footer Action Row -->
+                <div class="d-flex align-items-center justify-content-between pt-3 mt-2 border-top">
+                  <div>
+                    <span class="fs-11 text-muted-green d-block">Harga</span>
+                    <span class="fw-bold text-main fs-5 product-price">{{ formatMoney .Price }}</span>
+                  </div>
+                  <a href="/products/{{ .Slug }}" class="btn btn-forest-primary btn-sm px-3">
+                    Lihat Detail &rarr;
                   </a>
                 </div>
               </div>
@@ -89,21 +108,21 @@
         {{ end }}
       </div>
 
-      <!-- Pagination (when multiple pages exist) -->
+      <!-- Pagination -->
       {{ if gt .TotalPages 1 }}
-        <nav aria-label="Catalog pagination" class="d-flex justify-content-center">
+        <nav aria-label="Navigasi halaman katalog" class="d-flex justify-content-center">
           <ul class="pagination">
             <li class="page-item {{ if le .CurrentPage 1 }}disabled{{ end }}">
-              <a class="page-link rounded-pill me-1" href="/products?q={{ .Search }}&page={{ sub .CurrentPage 1 }}" aria-label="Previous">
-                <span aria-hidden="true">&laquo; Previous</span>
+              <a class="page-link rounded-pill me-1" href="/products?q={{ .Search }}&page={{ sub .CurrentPage 1 }}" aria-label="Sebelumnya">
+                <span aria-hidden="true">&laquo; Sebelumnya</span>
               </a>
             </li>
             <li class="page-item disabled">
-              <span class="page-link border-0 text-muted px-3">Page {{ .CurrentPage }} of {{ .TotalPages }}</span>
+              <span class="page-link border-0 text-muted px-3">Halaman {{ .CurrentPage }} dari {{ .TotalPages }}</span>
             </li>
             <li class="page-item {{ if ge .CurrentPage .TotalPages }}disabled{{ end }}">
-              <a class="page-link rounded-pill ms-1" href="/products?q={{ .Search }}&page={{ add .CurrentPage 1 }}" aria-label="Next">
-                <span aria-hidden="true">Next &raquo;</span>
+              <a class="page-link rounded-pill ms-1" href="/products?q={{ .Search }}&page={{ add .CurrentPage 1 }}" aria-label="Selanjutnya">
+                <span aria-hidden="true">Selanjutnya &raquo;</span>
               </a>
             </li>
           </ul>
@@ -112,19 +131,19 @@
 
     {{ else }}
       <!-- Empty State -->
-      <div class="text-center py-5 bg-light rounded-4 border">
+      <div class="text-center py-5 bg-white rounded-4 border">
         <i class="bi bi-search fs-1 text-muted mb-3 d-block opacity-50"></i>
-        <h5 class="fw-bold text-dark">No Products Found</h5>
-        <p class="text-muted small mb-4 max-w-md mx-auto">
+        <h5 class="fw-bold text-dark">Produk Tidak Ditemukan</h5>
+        <p class="text-muted small mb-4" style="max-width: 440px; margin-left: auto; margin-right: auto;">
           {{ if .Search }}
-            No products matched your search for &ldquo;{{ .Search }}&rdquo;. Try different keywords or reset your search.
+            Tidak ada produk yang cocok dengan pencarian &ldquo;{{ .Search }}&rdquo;. Coba kata kunci lain atau reset filter.
           {{ else }}
-            There are currently no published products available in the catalog.
+            Saat ini belum ada produk yang dipublikasikan di katalog.
           {{ end }}
         </p>
         {{ if .Search }}
-          <a href="/products" class="btn btn-outline-success rounded-pill px-4">
-            <i class="bi bi-arrow-counterclockwise me-1"></i> Reset All Filters
+          <a href="/products" class="btn-spark-outline px-4">
+            <i class="bi bi-arrow-counterclockwise me-1"></i> Reset Pencarian
           </a>
         {{ end }}
       </div>

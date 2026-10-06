@@ -1,0 +1,46 @@
+/* ---------------------------------------------------------------------
+   Sellora Shared Design Tokens (Adapted directly from Spark Admin)
+   Canvas: #F4F6F5 | Forest Dark: #051C12 | Forest Medium: #072F1F
+   Lime Accent: #B4F105 | Card: #FFFFFF | Border: #E9EFEF
+--------------------------------------------------------------------- */
+
+:root {
+  /* Colors */
+  --bs-body-bg: #F4F6F5;
+  --bs-body-font-family: 'Plus Jakarta Sans', sans-serif;
+
+  --brand-forest-dark: #051C12;     /* Core sidebar/brand background */
+  --brand-forest-medium: #072F1F;   /* Alert banner / dark card BG */
+  --brand-forest-light: #1A3E30;    /* Interactive elements in dark mode */
+  --brand-lime: #B4F105;            /* Lime-yellow accent highlight */
+  --brand-lime-hover: #c1f824;      
+  --brand-lime-translucent: rgba(180, 241, 5, 0.15);
+
+  --text-main: #0B130F;             /* Dark headers, main labels */
+  --text-muted-green: #6C7E75;      /* Secondary labels, muted details */
+  --text-sidebar-muted: #879A91;    /* Sidebar inactive link labels */
+
+  --card-background: #FFFFFF;
+  --border-light: #E9EFEF;
+  --border-dark-green: rgba(255, 255, 255, 0.1);
+
+  /* System Status Colors */
+  --sys-green: #22C55E;
+  --sys-green-bg: #DCFCE7;
+  --sys-red: #EF4444;
+  --sys-red-bg: #FEE2E2;
+  --sys-orange: #F97316;
+  --sys-orange-bg: #FFEDD5;
+
+  /* Border Radii */
+  --radius-xxl: 24px;
+  --radius-xl: 18px;
+  --radius-lg: 14px;
+  --radius-md: 10px;
+  --radius-sm: 6px;
+
+  /* Box Shadows */
+  --shadow-sm: 0 2px 8px rgba(11, 19, 15, 0.02);
+  --shadow-md: 0 10px 30px rgba(11, 19, 15, 0.04);
+  --shadow-lg: 0 20px 50px rgba(11, 19, 15, 0.08);
+}

@@ -35,8 +35,8 @@ func TestShowLogin(t *testing.T) {
 	}
 
 	body := rr.Body.String()
-	if !strings.Contains(body, "Sign in to Sellora") {
-		t.Errorf("expected body to contain 'Sign in to Sellora'")
+	if !strings.Contains(body, "Masuk ke Sellora") {
+		t.Errorf("expected body to contain 'Masuk ke Sellora'")
 	}
 }
 
@@ -53,8 +53,8 @@ func TestShowRegister(t *testing.T) {
 	}
 
 	body := rr.Body.String()
-	if !strings.Contains(body, "Create your account") {
-		t.Errorf("expected body to contain 'Create your account'")
+	if !strings.Contains(body, "Daftar Akun Baru") {
+		t.Errorf("expected body to contain 'Daftar Akun Baru'")
 	}
 }
 

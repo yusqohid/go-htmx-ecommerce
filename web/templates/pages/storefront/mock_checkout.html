@@ -3,35 +3,35 @@
   <div class="row justify-content-center">
     <div class="col-12 col-md-8 col-lg-6">
 
-      <div class="card border-warning shadow p-4 p-md-5 rounded-4 text-center">
+      <div class="card border-warning shadow-sm p-4 p-md-5 rounded-4 text-center bg-white">
         <div class="badge bg-warning text-dark py-2 px-3 rounded-pill align-self-center mb-3">
           <i class="bi bi-tools me-1"></i> Sandbox Test Gateway
         </div>
 
-        <h3 class="fw-bold mb-2">Simulated Payment Portal</h3>
+        <h3 class="fw-bold mb-2">Simulasi Portal Pembayaran</h3>
         <p class="text-muted small mb-4">
-          This is a development mock payment screen. Use the options below to simulate external payment gateway responses.
+          Halaman simulasi pembayaran untuk lingkungan pengembangan (Mock Provider). Gunakan tombol di bawah ini untuk menguji alur status pesanan.
         </p>
 
         <!-- Transaction Details -->
-        <div class="p-3 bg-light rounded-3 text-start mb-4">
+        <div class="p-3 bg-light rounded-3 text-start mb-4 border">
           <div class="d-flex justify-content-between mb-2 small text-muted">
-            <span>Order Reference:</span>
+            <span>Nomor Referensi:</span>
             <strong class="font-monospace text-dark">{{ .Order.Reference }}</strong>
           </div>
           <div class="d-flex justify-content-between mb-2 small text-muted">
-            <span>Payer:</span>
+            <span>Pembeli:</span>
             <strong class="text-dark">{{ .Order.Customer.Name }} ({{ .Order.Customer.Email }})</strong>
           </div>
           <div class="d-flex justify-content-between mb-2 small text-muted">
-            <span>Product:</span>
+            <span>Produk:</span>
             {{ range .Order.Items }}
               <strong class="text-dark">{{ .ProductName }}</strong>
             {{ end }}
           </div>
           <div class="border-top pt-2 mt-2 d-flex justify-content-between">
-            <span class="fw-bold text-dark">Amount Due:</span>
-            <span class="fs-4 fw-bold text-success">{{ formatMoney .Order.TotalAmount }}</span>
+            <span class="fw-bold text-dark">Total:</span>
+            <span class="fs-4 fw-bold text-dark product-price">{{ formatMoney .Order.TotalAmount }}</span>
           </div>
         </div>
 
@@ -40,16 +40,16 @@
           <form method="POST" action="/mock-checkout/simulate">
             <input type="hidden" name="ref" value="{{ .Order.Reference }}">
             <input type="hidden" name="status" value="paid">
-            <button type="submit" class="btn btn-success btn-lg w-100 rounded-pill fw-bold shadow-sm">
-              <i class="bi bi-check2-circle me-1"></i> Simulate Payment Success (PAID)
+            <button type="submit" class="btn btn-spark-primary w-100 py-3 fw-bold">
+              <i class="bi bi-check2-circle me-1"></i> Simulasi Pembayaran Berhasil (PAID)
             </button>
           </form>
 
           <form method="POST" action="/mock-checkout/simulate">
             <input type="hidden" name="ref" value="{{ .Order.Reference }}">
             <input type="hidden" name="status" value="failed">
-            <button type="submit" class="btn btn-outline-danger w-100 rounded-pill fw-semibold">
-              <i class="bi bi-x-circle me-1"></i> Simulate Payment Failure (FAILED)
+            <button type="submit" class="btn btn-outline-danger w-100 rounded-pill py-2 fw-semibold">
+              <i class="bi bi-x-circle me-1"></i> Simulasi Pembayaran Gagal (FAILED)
             </button>
           </form>
         </div>

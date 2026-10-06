@@ -5,31 +5,28 @@
     <div class="col-lg-12 mb-4">
       <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 border-bottom pb-4">
         <div>
-          <div class="hero-badge mb-2">
-            <span class="hero-badge-dot"></span>
-            <span>Customer Dashboard</span>
-          </div>
-          <h1 class="h3 fw-bold text-dark mb-1">My Purchases &amp; Orders</h1>
-          <p class="text-muted mb-0">Access your purchased digital products, license downloads, and transaction history.</p>
+          <h1 class="h3 fw-bold text-dark mb-1">Pesanan &amp; Pembelian Saya</h1>
+          <p class="text-muted small mb-0">Kelola riwayat pembelian dan unduh file produk digital Anda.</p>
         </div>
         <div>
-          <a href="/products" class="btn btn-outline-success rounded-pill px-4">
-            <i class="bi bi-grid me-1"></i> Browse Catalog
+          <a href="/products" class="btn-spark-outline px-4">
+            <i class="bi bi-grid me-1"></i> Buka Katalog
           </a>
         </div>
       </div>
     </div>
+
     <!-- Account Subnavigation Tabs -->
     <div class="col-lg-12 mb-4">
       <ul class="nav nav-pills gap-2">
         <li class="nav-item">
-          <a class="nav-link active rounded-pill px-4" href="/account/orders">
-            <i class="bi bi-bag-check me-1"></i> My Orders
+          <a class="nav-link active bg-dark text-white rounded-pill px-4" href="/account/orders">
+            <i class="bi bi-bag-check me-1"></i> Pesanan Saya
           </a>
         </li>
         <li class="nav-item">
           <a class="nav-link text-secondary rounded-pill px-4" href="/account/settings">
-            <i class="bi bi-person-gear me-1"></i> Account &amp; Password
+            <i class="bi bi-person-gear me-1"></i> Akun &amp; Kata Sandi
           </a>
         </li>
       </ul>
@@ -38,30 +35,30 @@
     <!-- Orders Content -->
     <div class="col-lg-12">
       {{ if .Orders }}
-        <div class="d-flex flex-column gap-4">
+        <div class="d-flex flex-column gap-3">
           {{ range .Orders }}
             {{ $isPaid := eq .Status "paid" }}
             {{ $orderRef := .Reference }}
-            <div class="card border rounded-4 shadow-sm overflow-hidden bg-white">
+            <div class="spark-card p-0">
               <!-- Order Header -->
-              <div class="card-header bg-light py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-3 border-bottom">
+              <div class="bg-light py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-3 border-bottom">
                 <div class="d-flex flex-wrap align-items-center gap-3">
                   <div>
-                    <span class="text-muted small d-block">Order Reference</span>
+                    <span class="text-muted small d-block">Nomor Referensi</span>
                     <div class="d-flex align-items-center gap-1">
                       <span class="fw-bold text-dark font-monospace">{{ .Reference }}</span>
-                      <button type="button" class="btn btn-sm btn-link text-muted p-0 ms-1 copy-ref-btn" data-clipboard="{{ .Reference }}" title="Copy Reference">
+                      <button type="button" class="btn btn-sm btn-link text-muted p-0 ms-1 copy-ref-btn" data-clipboard="{{ .Reference }}" title="Salin Referensi">
                         <i class="bi bi-clipboard"></i>
                       </button>
                     </div>
                   </div>
                   <div class="border-start ps-3 d-none d-sm-block">
-                    <span class="text-muted small d-block">Date Placed</span>
+                    <span class="text-muted small d-block">Tanggal</span>
                     <span class="text-dark small">{{ formatDate .CreatedAt }}</span>
                   </div>
                   <div class="border-start ps-3 d-none d-md-block">
-                    <span class="text-muted small d-block">Payment Gateway</span>
-                    <span class="badge bg-light text-dark border font-monospace text-uppercase small">{{ .PaymentProvider }}</span>
+                    <span class="text-muted small d-block">Metode</span>
+                    <span class="badge bg-white text-dark border font-monospace text-uppercase small">{{ .PaymentProvider }}</span>
                   </div>
                 </div>
 
@@ -73,15 +70,15 @@
                   <div>
                     {{ if $isPaid }}
                       <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill fw-semibold">
-                        <i class="bi bi-check-circle-fill me-1"></i> Paid
+                        <i class="bi bi-check-circle-fill me-1"></i> Lunas
                       </span>
                     {{ else if eq .Status "pending" }}
                       <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-3 py-2 rounded-pill fw-semibold">
-                        <i class="bi bi-clock-fill me-1"></i> Pending
+                        <i class="bi bi-clock-fill me-1"></i> Menunggu
                       </span>
                     {{ else if eq .Status "failed" }}
                       <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2 rounded-pill fw-semibold">
-                        <i class="bi bi-x-circle-fill me-1"></i> Failed
+                        <i class="bi bi-x-circle-fill me-1"></i> Gagal
                       </span>
                     {{ else }}
                       <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-3 py-2 rounded-pill fw-semibold text-capitalize">
@@ -93,13 +90,13 @@
               </div>
 
               <!-- Order Body / Line Items -->
-              <div class="card-body p-4">
+              <div class="p-4">
                 <div class="row g-4 align-items-center">
                   <div class="col-lg-8">
-                    <h6 class="fw-bold text-dark mb-3">Included Packages &amp; Downloads:</h6>
+                    <h6 class="fw-bold text-dark mb-3">Item Produk:</h6>
                     <ul class="list-group list-group-flush">
                       {{ range .Items }}
-                        <li class="list-group-item px-0 py-3 d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
+                        <li class="list-group-item px-0 py-2 d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2 border-0">
                           <div>
                             <div class="fw-semibold text-dark">{{ .ProductName }}</div>
                             <span class="text-muted small product-price">{{ formatMoney .Price }}</span>
@@ -111,14 +108,14 @@
                             {{ if $files }}
                               <div class="d-flex flex-wrap gap-2">
                                 {{ range $files }}
-                                  <a href="/downloads/{{ .ID }}" class="btn btn-sm btn-success rounded-pill px-3 fw-medium shadow-sm">
-                                    <i class="bi bi-download me-1"></i> Download {{ .OriginalName }}
+                                  <a href="/downloads/{{ .ID }}" class="btn btn-sm btn-spark-primary py-1 px-3">
+                                    <i class="bi bi-download me-1"></i> Unduh {{ .OriginalName }}
                                     {{ if .FileSize }}<span class="opacity-75 small">({{ formatBytes .FileSize }})</span>{{ end }}
                                   </a>
                                 {{ end }}
                               </div>
                             {{ else }}
-                              <span class="badge bg-light text-muted border py-1.5 px-2.5 rounded-pill small">No files attached</span>
+                              <span class="badge bg-light text-muted border py-1 px-2 rounded-pill small">Belum ada file terlampir</span>
                             {{ end }}
                           {{ end }}
                         </li>
@@ -127,8 +124,8 @@
                   </div>
 
                   <div class="col-lg-4 text-lg-end border-start-lg ps-lg-4">
-                    <a href="/account/orders/{{ .Reference }}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
-                      View Order Receipt <i class="bi bi-chevron-right ms-1"></i>
+                    <a href="/account/orders/{{ .Reference }}" class="btn btn-spark-outline py-2 px-3 small">
+                      Lihat Rincian <i class="bi bi-chevron-right ms-1"></i>
                     </a>
                   </div>
                 </div>
@@ -138,16 +135,16 @@
         </div>
       {{ else }}
         <!-- Empty State -->
-        <div class="text-center py-5 my-5 border rounded-4 bg-light">
+        <div class="text-center py-5 my-4 border rounded-4 bg-white">
           <div class="display-4 text-muted mb-3 opacity-50">
             <i class="bi bi-bag-x"></i>
           </div>
-          <h3 class="h4 fw-bold text-dark mb-2">No Purchases Yet</h3>
-          <p class="text-muted mb-4 max-w-md mx-auto">
-            You have not placed any orders yet. Explore our digital catalog to discover production-ready templates, kits, and developer tools!
+          <h3 class="h4 fw-bold text-dark mb-2">Belum Ada Pesanan</h3>
+          <p class="text-muted small mb-4" style="max-width: 420px; margin-left: auto; margin-right: auto;">
+            Anda belum memiliki riwayat pembelian. Jelajahi katalog produk kami untuk menemukan template dan kit yang Anda butuhkan.
           </p>
-          <a href="/products" class="btn btn-success rounded-pill px-4 fw-semibold shadow-sm">
-            <i class="bi bi-compass me-1"></i> Explore Digital Catalog
+          <a href="/products" class="btn btn-spark-primary px-4">
+            <i class="bi bi-compass me-1"></i> Jelajahi Katalog
           </a>
         </div>
       {{ end }}

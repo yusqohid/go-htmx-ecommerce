@@ -24,8 +24,8 @@ func NewProductRepository(db *sql.DB) *PostgresProductRepository {
 // Create inserts a new product into the database.
 func (r *PostgresProductRepository) Create(ctx context.Context, p *domain.Product) error {
 	query := `
-		INSERT INTO products (name, slug, short_description, full_description, price, thumbnail_url, status, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		INSERT INTO products (name, slug, short_description, full_description, price, thumbnail_url, demo_url, status, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		RETURNING id, created_at, updated_at;
 	`
 	now := time.Now().UTC()
@@ -36,6 +36,7 @@ func (r *PostgresProductRepository) Create(ctx context.Context, p *domain.Produc
 		p.FullDescription,
 		p.Price,
 		p.ThumbnailURL,
+		strings.TrimSpace(p.DemoURL),
 		p.Status,
 		now,
 		now,
@@ -51,10 +52,10 @@ func (r *PostgresProductRepository) Create(ctx context.Context, p *domain.Produc
 	return nil
 }
 
-// FindByID retrieves a product by its ID, including its associated digital files.
+// FindByID retrieves a product by its ID, including its associated digital files and gallery images.
 func (r *PostgresProductRepository) FindByID(ctx context.Context, id int64) (*domain.Product, error) {
 	query := `
-		SELECT id, name, slug, short_description, full_description, price, thumbnail_url, status, created_at, updated_at
+		SELECT id, name, slug, short_description, full_description, price, thumbnail_url, demo_url, status, created_at, updated_at
 		FROM products
 		WHERE id = $1;
 	`
@@ -67,6 +68,7 @@ func (r *PostgresProductRepository) FindByID(ctx context.Context, id int64) (*do
 		&p.FullDescription,
 		&p.Price,
 		&p.ThumbnailURL,
+		&p.DemoURL,
 		&p.Status,
 		&p.CreatedAt,
 		&p.UpdatedAt,
@@ -84,13 +86,18 @@ func (r *PostgresProductRepository) FindByID(ctx context.Context, id int64) (*do
 		p.Files = files
 	}
 
+	images, err := r.findImagesByProductID(ctx, p.ID)
+	if err == nil {
+		p.Images = images
+	}
+
 	return p, nil
 }
 
 // FindBySlug retrieves a product by its unique slug.
 func (r *PostgresProductRepository) FindBySlug(ctx context.Context, slug string) (*domain.Product, error) {
 	query := `
-		SELECT id, name, slug, short_description, full_description, price, thumbnail_url, status, created_at, updated_at
+		SELECT id, name, slug, short_description, full_description, price, thumbnail_url, demo_url, status, created_at, updated_at
 		FROM products
 		WHERE slug = $1;
 	`
@@ -103,6 +110,7 @@ func (r *PostgresProductRepository) FindBySlug(ctx context.Context, slug string)
 		&p.FullDescription,
 		&p.Price,
 		&p.ThumbnailURL,
+		&p.DemoURL,
 		&p.Status,
 		&p.CreatedAt,
 		&p.UpdatedAt,
@@ -118,6 +126,11 @@ func (r *PostgresProductRepository) FindBySlug(ctx context.Context, slug string)
 	files, err := r.findFilesByProductID(ctx, p.ID)
 	if err == nil {
 		p.Files = files
+	}
+
+	images, err := r.findImagesByProductID(ctx, p.ID)
+	if err == nil {
+		p.Images = images
 	}
 
 	return p, nil
@@ -138,7 +151,7 @@ func (r *PostgresProductRepository) ListPublished(ctx context.Context, search st
 	}
 
 	query := `
-		SELECT id, name, slug, short_description, full_description, price, thumbnail_url, status, created_at, updated_at
+		SELECT id, name, slug, short_description, full_description, price, thumbnail_url, demo_url, status, created_at, updated_at
 		FROM products
 		WHERE status = 'published' AND (LOWER(name) LIKE $1 OR LOWER(short_description) LIKE $1)
 		ORDER BY created_at DESC
@@ -161,6 +174,7 @@ func (r *PostgresProductRepository) ListPublished(ctx context.Context, search st
 			&p.FullDescription,
 			&p.Price,
 			&p.ThumbnailURL,
+			&p.DemoURL,
 			&p.Status,
 			&p.CreatedAt,
 			&p.UpdatedAt,
@@ -196,7 +210,7 @@ func (r *PostgresProductRepository) ListAll(ctx context.Context, search string, 
 	}
 
 	query := fmt.Sprintf(`
-		SELECT id, name, slug, short_description, full_description, price, thumbnail_url, status, created_at, updated_at
+		SELECT id, name, slug, short_description, full_description, price, thumbnail_url, demo_url, status, created_at, updated_at
 		FROM products
 		WHERE %s
 		ORDER BY created_at DESC
@@ -222,6 +236,7 @@ func (r *PostgresProductRepository) ListAll(ctx context.Context, search string, 
 			&p.FullDescription,
 			&p.Price,
 			&p.ThumbnailURL,
+			&p.DemoURL,
 			&p.Status,
 			&p.CreatedAt,
 			&p.UpdatedAt,
@@ -231,10 +246,12 @@ func (r *PostgresProductRepository) ListAll(ctx context.Context, search string, 
 		products = append(products, p)
 	}
 
-	// Fetch file count for each product
+	// Fetch file count and image count for each product
 	for i := range products {
 		files, _ := r.findFilesByProductID(ctx, products[i].ID)
 		products[i].Files = files
+		images, _ := r.findImagesByProductID(ctx, products[i].ID)
+		products[i].Images = images
 	}
 
 	return products, total, nil
@@ -244,8 +261,8 @@ func (r *PostgresProductRepository) ListAll(ctx context.Context, search string, 
 func (r *PostgresProductRepository) Update(ctx context.Context, p *domain.Product) error {
 	query := `
 		UPDATE products
-		SET name = $1, slug = $2, short_description = $3, full_description = $4, price = $5, thumbnail_url = $6, status = $7, updated_at = $8
-		WHERE id = $9;
+		SET name = $1, slug = $2, short_description = $3, full_description = $4, price = $5, thumbnail_url = $6, demo_url = $7, status = $8, updated_at = $9
+		WHERE id = $10;
 	`
 	p.UpdatedAt = time.Now().UTC()
 	res, err := r.db.ExecContext(ctx, query,
@@ -255,6 +272,7 @@ func (r *PostgresProductRepository) Update(ctx context.Context, p *domain.Produc
 		p.FullDescription,
 		p.Price,
 		p.ThumbnailURL,
+		strings.TrimSpace(p.DemoURL),
 		p.Status,
 		p.UpdatedAt,
 		p.ID,
@@ -340,6 +358,36 @@ func (r *PostgresProductRepository) findFilesByProductID(ctx context.Context, pr
 		files = append(files, f)
 	}
 	return files, nil
+}
+
+func (r *PostgresProductRepository) findImagesByProductID(ctx context.Context, productID int64) ([]domain.ProductImage, error) {
+	query := `
+		SELECT id, product_id, image_url, display_order, created_at
+		FROM product_images
+		WHERE product_id = $1
+		ORDER BY display_order ASC, created_at ASC;
+	`
+	rows, err := r.db.QueryContext(ctx, query, productID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var images []domain.ProductImage
+	for rows.Next() {
+		var img domain.ProductImage
+		if err := rows.Scan(
+			&img.ID,
+			&img.ProductID,
+			&img.ImageURL,
+			&img.DisplayOrder,
+			&img.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		images = append(images, img)
+	}
+	return images, nil
 }
 
 // PostgresProductFileRepository implements domain.ProductFileRepository using PostgreSQL.
@@ -449,6 +497,112 @@ func (r *PostgresProductFileRepository) Delete(ctx context.Context, id int64) er
 	res, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete product file: %w", err)
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+	if rows == 0 {
+		return domain.ErrNotFound
+	}
+	return nil
+}
+
+// PostgresProductImageRepository implements domain.ProductImageRepository using PostgreSQL.
+type PostgresProductImageRepository struct {
+	db *sql.DB
+}
+
+// NewProductImageRepository creates a new PostgresProductImageRepository.
+func NewProductImageRepository(db *sql.DB) *PostgresProductImageRepository {
+	return &PostgresProductImageRepository{db: db}
+}
+
+// Create stores metadata for a product gallery image.
+func (r *PostgresProductImageRepository) Create(ctx context.Context, img *domain.ProductImage) error {
+	query := `
+		INSERT INTO product_images (product_id, image_url, display_order, created_at)
+		VALUES ($1, $2, $3, $4)
+		RETURNING id, created_at;
+	`
+	img.CreatedAt = time.Now().UTC()
+	err := r.db.QueryRowContext(ctx, query,
+		img.ProductID,
+		strings.TrimSpace(img.ImageURL),
+		img.DisplayOrder,
+		img.CreatedAt,
+	).Scan(&img.ID, &img.CreatedAt)
+
+	if err != nil {
+		return fmt.Errorf("failed to insert product image: %w", err)
+	}
+	return nil
+}
+
+// FindByID retrieves a product image by its ID.
+func (r *PostgresProductImageRepository) FindByID(ctx context.Context, id int64) (*domain.ProductImage, error) {
+	query := `
+		SELECT id, product_id, image_url, display_order, created_at
+		FROM product_images
+		WHERE id = $1;
+	`
+	img := &domain.ProductImage{}
+	err := r.db.QueryRowContext(ctx, query, id).Scan(
+		&img.ID,
+		&img.ProductID,
+		&img.ImageURL,
+		&img.DisplayOrder,
+		&img.CreatedAt,
+	)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, domain.ErrNotFound
+		}
+		return nil, fmt.Errorf("failed to find product image by id: %w", err)
+	}
+
+	return img, nil
+}
+
+// FindByProductID retrieves all images associated with a product ordered by display_order.
+func (r *PostgresProductImageRepository) FindByProductID(ctx context.Context, productID int64) ([]domain.ProductImage, error) {
+	query := `
+		SELECT id, product_id, image_url, display_order, created_at
+		FROM product_images
+		WHERE product_id = $1
+		ORDER BY display_order ASC, created_at ASC;
+	`
+	rows, err := r.db.QueryContext(ctx, query, productID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list product images: %w", err)
+	}
+	defer rows.Close()
+
+	var images []domain.ProductImage
+	for rows.Next() {
+		var img domain.ProductImage
+		if err := rows.Scan(
+			&img.ID,
+			&img.ProductID,
+			&img.ImageURL,
+			&img.DisplayOrder,
+			&img.CreatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan product image: %w", err)
+		}
+		images = append(images, img)
+	}
+
+	return images, nil
+}
+
+// Delete removes a product image by its ID.
+func (r *PostgresProductImageRepository) Delete(ctx context.Context, id int64) error {
+	query := `DELETE FROM product_images WHERE id = $1;`
+	res, err := r.db.ExecContext(ctx, query, id)
+	if err != nil {
+		return fmt.Errorf("failed to delete product image: %w", err)
 	}
 	rows, err := res.RowsAffected()
 	if err != nil {

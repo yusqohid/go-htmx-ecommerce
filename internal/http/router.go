@@ -174,6 +174,9 @@ func NewRouter(deps RouterDeps) http.Handler {
 			admin.Get("/admin/products/{id}/files", deps.ProductHandler.ShowFiles)
 			admin.Post("/admin/products/{id}/files", deps.ProductHandler.UploadFile)
 			admin.Post("/admin/products/{id}/files/{fileID}/delete", deps.ProductHandler.DeleteFile)
+			admin.Get("/admin/products/{id}/images", deps.ProductHandler.ShowImages)
+			admin.Post("/admin/products/{id}/images", deps.ProductHandler.AddImage)
+			admin.Post("/admin/products/{id}/images/{imageID}/delete", deps.ProductHandler.DeleteImage)
 			admin.Post("/admin/products/{id}/delete", deps.ProductHandler.DeleteProduct)
 
 			// Admin Orders Management

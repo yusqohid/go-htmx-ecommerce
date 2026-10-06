@@ -69,6 +69,7 @@ func FuncMap() template.FuncMap {
 			return template.HTML(replaced)
 		},
 		"renderMarkdown": RenderMarkdown,
+		"embedVideoURL":  EmbedVideoURL,
 	}
 }
 

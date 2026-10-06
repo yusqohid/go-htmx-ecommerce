@@ -25,6 +25,7 @@ type CreateProductInput struct {
 	FullDescription  string
 	Price            int64
 	ThumbnailURL     string
+	DemoURL          string
 	Status           domain.ProductStatus
 }
 
@@ -36,6 +37,7 @@ type UpdateProductInput struct {
 	FullDescription  string
 	Price            int64
 	ThumbnailURL     string
+	DemoURL          string
 	Status           domain.ProductStatus
 }
 
@@ -43,6 +45,7 @@ type UpdateProductInput struct {
 type Service struct {
 	productRepo domain.ProductRepository
 	fileRepo    domain.ProductFileRepository
+	imageRepo   domain.ProductImageRepository
 	storage     *storage.Storage
 }
 
@@ -50,11 +53,13 @@ type Service struct {
 func NewService(
 	productRepo domain.ProductRepository,
 	fileRepo domain.ProductFileRepository,
+	imageRepo domain.ProductImageRepository,
 	storage *storage.Storage,
 ) *Service {
 	return &Service{
 		productRepo: productRepo,
 		fileRepo:    fileRepo,
+		imageRepo:   imageRepo,
 		storage:     storage,
 	}
 }
@@ -89,6 +94,7 @@ func (s *Service) CreateProduct(ctx context.Context, input CreateProductInput) (
 		FullDescription:  strings.TrimSpace(input.FullDescription),
 		Price:            input.Price,
 		ThumbnailURL:     strings.TrimSpace(input.ThumbnailURL),
+		DemoURL:          strings.TrimSpace(input.DemoURL),
 		Status:           status,
 	}
 
@@ -134,6 +140,7 @@ func (s *Service) UpdateProduct(ctx context.Context, id int64, input UpdateProdu
 	product.FullDescription = strings.TrimSpace(input.FullDescription)
 	product.Price = input.Price
 	product.ThumbnailURL = strings.TrimSpace(input.ThumbnailURL)
+	product.DemoURL = strings.TrimSpace(input.DemoURL)
 	if input.Status != "" {
 		product.Status = input.Status
 	}
@@ -311,4 +318,52 @@ func Slugify(text string) string {
 	lower := strings.ToLower(strings.TrimSpace(text))
 	slug := nonAlphanumericRegex.ReplaceAllString(lower, "-")
 	return strings.Trim(slug, "-")
+}
+
+// AddProductImage attaches a new preview/gallery image to a product.
+func (s *Service) AddProductImage(ctx context.Context, productID int64, imageURL string, displayOrder int) (*domain.ProductImage, error) {
+	imageURL = strings.TrimSpace(imageURL)
+	if imageURL == "" {
+		return nil, fmt.Errorf("%w: image URL cannot be empty", domain.ErrInvalidInput)
+	}
+
+	// Verify product exists
+	if _, err := s.productRepo.FindByID(ctx, productID); err != nil {
+		return nil, err
+	}
+
+	img := &domain.ProductImage{
+		ProductID:    productID,
+		ImageURL:     imageURL,
+		DisplayOrder: displayOrder,
+	}
+
+	if err := s.imageRepo.Create(ctx, img); err != nil {
+		return nil, err
+	}
+
+	return img, nil
+}
+
+// DeleteProductImage removes a gallery image from a product.
+func (s *Service) DeleteProductImage(ctx context.Context, productID, imageID int64) error {
+	img, err := s.imageRepo.FindByID(ctx, imageID)
+	if err != nil {
+		return err
+	}
+
+	if img.ProductID != productID {
+		return domain.ErrNotFound
+	}
+
+	return s.imageRepo.Delete(ctx, imageID)
+}
+
+// ListProductImages retrieves all gallery images for a product.
+func (s *Service) ListProductImages(ctx context.Context, productID int64) ([]domain.ProductImage, error) {
+	if _, err := s.productRepo.FindByID(ctx, productID); err != nil {
+		return nil, err
+	}
+
+	return s.imageRepo.FindByProductID(ctx, productID)
 }

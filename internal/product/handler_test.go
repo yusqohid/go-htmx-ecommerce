@@ -2,6 +2,7 @@ package product_test
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -19,9 +20,10 @@ import (
 func TestProductHandlerAuthorization(t *testing.T) {
 	productRepo := NewMockProductRepository()
 	fileRepo := NewMockProductFileRepository()
+	imageRepo := NewMockProductImageRepository()
 	tempDir := t.TempDir()
 	storageMgr, _ := storage.New(tempDir)
-	service := product.NewService(productRepo, fileRepo, storageMgr)
+	service := product.NewService(productRepo, fileRepo, imageRepo, storageMgr)
 	viewRenderer := view.New(templates.FS, true)
 	handler := product.NewHandler(service, nil, viewRenderer, "mock")
 
@@ -80,9 +82,10 @@ func TestProductHandlerAuthorization(t *testing.T) {
 func TestToggleStatusHTMX(t *testing.T) {
 	productRepo := NewMockProductRepository()
 	fileRepo := NewMockProductFileRepository()
+	imageRepo := NewMockProductImageRepository()
 	tempDir := t.TempDir()
 	storageMgr, _ := storage.New(tempDir)
-	service := product.NewService(productRepo, fileRepo, storageMgr)
+	service := product.NewService(productRepo, fileRepo, imageRepo, storageMgr)
 	viewRenderer := view.New(templates.FS, true)
 	handler := product.NewHandler(service, nil, viewRenderer, "mock")
 
@@ -178,4 +181,73 @@ func (m *MockSessionRepository) DeleteByToken(ctx context.Context, token string)
 
 func (m *MockSessionRepository) DeleteExpired(ctx context.Context) error {
 	return nil
+}
+
+func TestProductHandler_Images(t *testing.T) {
+	productRepo := NewMockProductRepository()
+	fileRepo := NewMockProductFileRepository()
+	imageRepo := NewMockProductImageRepository()
+	tempDir := t.TempDir()
+	storageMgr, _ := storage.New(tempDir)
+	service := product.NewService(productRepo, fileRepo, imageRepo, storageMgr)
+	viewRenderer := view.New(templates.FS, true)
+	handler := product.NewHandler(service, nil, viewRenderer, "mock")
+
+	ctx := context.Background()
+	adminUser := &domain.User{ID: 1, Name: "Admin", Role: domain.RoleAdmin}
+
+	prod, err := service.CreateProduct(ctx, product.CreateProductInput{
+		Name:    "Test Product with Images",
+		Price:   100000,
+		DemoURL: "https://www.youtube.com/watch?v=xyz",
+	})
+	if err != nil {
+		t.Fatalf("failed to create product: %v", err)
+	}
+
+	r := chi.NewRouter()
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			next.ServeHTTP(w, req.WithContext(auth.WithUser(req.Context(), adminUser)))
+		})
+	})
+	r.Get("/admin/products/{id}/images", handler.ShowImages)
+	r.Post("/admin/products/{id}/images", handler.AddImage)
+	r.Post("/admin/products/{id}/images/{imageID}/delete", handler.DeleteImage)
+
+	// 1. ShowImages
+	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/admin/products/%d/images", prod.ID), nil)
+	rec := httptest.NewRecorder()
+	r.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Errorf("expected 200 OK from ShowImages, got %d", rec.Code)
+	}
+
+	// 2. AddImage success
+	formData := strings.NewReader("image_url=https://example.com/screenshot1.png&display_order=1")
+	req = httptest.NewRequest(http.MethodPost, fmt.Sprintf("/admin/products/%d/images", prod.ID), formData)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rec = httptest.NewRecorder()
+	r.ServeHTTP(rec, req)
+	if rec.Code != http.StatusSeeOther {
+		t.Errorf("expected 303 redirect from AddImage, got %d", rec.Code)
+	}
+
+	images, _ := service.ListProductImages(ctx, prod.ID)
+	if len(images) != 1 {
+		t.Fatalf("expected 1 image added, got %d", len(images))
+	}
+
+	// 3. DeleteImage
+	req = httptest.NewRequest(http.MethodPost, fmt.Sprintf("/admin/products/%d/images/%d/delete", prod.ID, images[0].ID), nil)
+	rec = httptest.NewRecorder()
+	r.ServeHTTP(rec, req)
+	if rec.Code != http.StatusSeeOther {
+		t.Errorf("expected 303 redirect from DeleteImage, got %d", rec.Code)
+	}
+
+	imagesAfter, _ := service.ListProductImages(ctx, prod.ID)
+	if len(imagesAfter) != 0 {
+		t.Errorf("expected 0 images after delete, got %d", len(imagesAfter))
+	}
 }

@@ -12,6 +12,10 @@ This document tracks planned architectural, UI/UX, and functional enhancements. 
   - [x] Add loading indicators for HTMX catalog search (`hx-indicator`).
 - [x] **Product Detail Page Improvements:**
   - [x] Rich Markdown rendering for product descriptions (`RenderMarkdown` implemented).
+- [x] **Product Media Gallery & Video Demo:**
+  - [x] Multi-image gallery support with `product_images` schema migration and repository.
+  - [x] Interactive thumbnail switcher on the product detail page.
+  - [x] Video preview player (YouTube & Vimeo embed) for digital goods (`demo_url`).
 - [x] **Customer Dashboard & Navigation:**
   - [x] Polish customer order history and digital download shelf UI.
 - [x] **Core Features:**
@@ -22,10 +26,6 @@ This document tracks planned architectural, UI/UX, and functional enhancements. 
 
 ## 🎯 Next Priorities (High Impact)
 
-- [ ] **Product Media Gallery & Carousel:**
-  - Support multiple product preview images (requires DB update for `product_images`).
-  - Interactive carousel/lightbox on the product detail page.
-  - Add video/demo embed player for digital goods (e.g., YouTube/Vimeo preview links).
 - [ ] **Discount & Promotion Engine:**
   - Support automated discount codes and coupons (fixed amount or percentage).
   - Add coupon input field in the checkout flow.

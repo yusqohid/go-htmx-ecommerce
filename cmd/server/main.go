@@ -88,7 +88,8 @@ func main() {
 
 		productRepo = product.NewProductRepository(db.DB)
 		fileRepo := product.NewProductFileRepository(db.DB)
-		productService = product.NewService(productRepo, fileRepo, storageManager)
+		imageRepo := product.NewProductImageRepository(db.DB)
+		productService = product.NewService(productRepo, fileRepo, imageRepo, storageManager)
 		productHandler = product.NewHandler(productService, productRepo, viewRenderer, cfg.PaymentProvider)
 		storefrontHandler = product.NewStorefrontHandler(productService, viewRenderer)
 

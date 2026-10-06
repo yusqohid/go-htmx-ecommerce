@@ -147,6 +147,53 @@ func (m *MockProductFileRepository) Delete(ctx context.Context, id int64) error 
 	return nil
 }
 
+// MockProductImageRepository is an in-memory repository for product images testing.
+type MockProductImageRepository struct {
+	images map[int64]*domain.ProductImage
+	nextID int64
+}
+
+func NewMockProductImageRepository() *MockProductImageRepository {
+	return &MockProductImageRepository{
+		images: make(map[int64]*domain.ProductImage),
+		nextID: 1,
+	}
+}
+
+func (m *MockProductImageRepository) Create(ctx context.Context, img *domain.ProductImage) error {
+	img.ID = m.nextID
+	m.nextID++
+	img.CreatedAt = time.Now()
+	m.images[img.ID] = img
+	return nil
+}
+
+func (m *MockProductImageRepository) FindByID(ctx context.Context, id int64) (*domain.ProductImage, error) {
+	img, ok := m.images[id]
+	if !ok {
+		return nil, domain.ErrNotFound
+	}
+	return img, nil
+}
+
+func (m *MockProductImageRepository) FindByProductID(ctx context.Context, productID int64) ([]domain.ProductImage, error) {
+	var res []domain.ProductImage
+	for _, img := range m.images {
+		if img.ProductID == productID {
+			res = append(res, *img)
+		}
+	}
+	return res, nil
+}
+
+func (m *MockProductImageRepository) Delete(ctx context.Context, id int64) error {
+	if _, ok := m.images[id]; !ok {
+		return domain.ErrNotFound
+	}
+	delete(m.images, id)
+	return nil
+}
+
 func TestSlugify(t *testing.T) {
 	tests := []struct {
 		input    string
@@ -169,22 +216,24 @@ func TestSlugify(t *testing.T) {
 func TestCreateProduct(t *testing.T) {
 	productRepo := NewMockProductRepository()
 	fileRepo := NewMockProductFileRepository()
+	imageRepo := NewMockProductImageRepository()
 	tempDir := t.TempDir()
 	storageMgr, _ := storage.New(tempDir)
 
-	service := product.NewService(productRepo, fileRepo, storageMgr)
+	service := product.NewService(productRepo, fileRepo, imageRepo, storageMgr)
 	ctx := context.Background()
 
 	// 1. Success case
 	prod, err := service.CreateProduct(ctx, product.CreateProductInput{
-		Name:  "Test Software Kit",
-		Price: 150000,
+		Name:    "Test Software Kit",
+		Price:   150000,
+		DemoURL: "https://www.youtube.com/watch?v=12345",
 	})
 	if err != nil {
 		t.Fatalf("expected product creation to succeed, got %v", err)
 	}
 
-	if prod.ID == 0 || prod.Slug != "test-software-kit" || prod.Status != domain.StatusDraft {
+	if prod.ID == 0 || prod.Slug != "test-software-kit" || prod.Status != domain.StatusDraft || prod.DemoURL != "https://www.youtube.com/watch?v=12345" {
 		t.Errorf("unexpected product properties: %+v", prod)
 	}
 
@@ -210,10 +259,11 @@ func TestCreateProduct(t *testing.T) {
 func TestTogglePublish(t *testing.T) {
 	productRepo := NewMockProductRepository()
 	fileRepo := NewMockProductFileRepository()
+	imageRepo := NewMockProductImageRepository()
 	tempDir := t.TempDir()
 	storageMgr, _ := storage.New(tempDir)
 
-	service := product.NewService(productRepo, fileRepo, storageMgr)
+	service := product.NewService(productRepo, fileRepo, imageRepo, storageMgr)
 	ctx := context.Background()
 
 	prod, _ := service.CreateProduct(ctx, product.CreateProductInput{
@@ -243,10 +293,11 @@ func TestTogglePublish(t *testing.T) {
 func TestUploadAndDeleteFile(t *testing.T) {
 	productRepo := NewMockProductRepository()
 	fileRepo := NewMockProductFileRepository()
+	imageRepo := NewMockProductImageRepository()
 	tempDir := t.TempDir()
 	storageMgr, _ := storage.New(tempDir)
 
-	service := product.NewService(productRepo, fileRepo, storageMgr)
+	service := product.NewService(productRepo, fileRepo, imageRepo, storageMgr)
 	ctx := context.Background()
 
 	prod, _ := service.CreateProduct(ctx, product.CreateProductInput{
@@ -311,8 +362,9 @@ func TestUploadAndDeleteFile(t *testing.T) {
 func TestService_Storefront(t *testing.T) {
 	productRepo := NewMockProductRepository()
 	fileRepo := NewMockProductFileRepository()
+	imageRepo := NewMockProductImageRepository()
 	storageMgr, _ := storage.New(t.TempDir())
-	service := product.NewService(productRepo, fileRepo, storageMgr)
+	service := product.NewService(productRepo, fileRepo, imageRepo, storageMgr)
 	ctx := context.Background()
 
 	// 1. Create a published product
@@ -364,6 +416,76 @@ func TestService_Storefront(t *testing.T) {
 	_, err = service.GetPublishedProductBySlug(ctx, draftProd.Slug)
 	if !errors.Is(err, domain.ErrNotFound) {
 		t.Errorf("expected ErrNotFound for draft product in storefront, got %v", err)
+	}
+}
+
+func TestProductImageManagement(t *testing.T) {
+	productRepo := NewMockProductRepository()
+	fileRepo := NewMockProductFileRepository()
+	imageRepo := NewMockProductImageRepository()
+	storageMgr, _ := storage.New(t.TempDir())
+	service := product.NewService(productRepo, fileRepo, imageRepo, storageMgr)
+	ctx := context.Background()
+
+	prod, err := service.CreateProduct(ctx, product.CreateProductInput{
+		Name:  "Preview Product",
+		Price: 75000,
+	})
+	if err != nil {
+		t.Fatalf("failed to create product: %v", err)
+	}
+
+	// 1. Add image successfully
+	img1, err := service.AddProductImage(ctx, prod.ID, "https://example.com/img1.png", 0)
+	if err != nil {
+		t.Fatalf("failed to add product image: %v", err)
+	}
+	if img1.ID == 0 || img1.ProductID != prod.ID || img1.ImageURL != "https://example.com/img1.png" {
+		t.Errorf("unexpected image properties: %+v", img1)
+	}
+
+	img2, err := service.AddProductImage(ctx, prod.ID, "https://example.com/img2.png", 1)
+	if err != nil {
+		t.Fatalf("failed to add second image: %v", err)
+	}
+
+	// 2. Add image with empty URL should fail
+	_, err = service.AddProductImage(ctx, prod.ID, "   ", 2)
+	if !errors.Is(err, domain.ErrInvalidInput) {
+		t.Errorf("expected ErrInvalidInput for empty image url, got %v", err)
+	}
+
+	// 3. Add image to non-existent product should fail
+	_, err = service.AddProductImage(ctx, 99999, "https://example.com/img.png", 0)
+	if !errors.Is(err, domain.ErrNotFound) {
+		t.Errorf("expected ErrNotFound for missing product, got %v", err)
+	}
+
+	// 4. List product images
+	images, err := service.ListProductImages(ctx, prod.ID)
+	if err != nil {
+		t.Fatalf("failed to list product images: %v", err)
+	}
+	if len(images) != 2 {
+		t.Errorf("expected 2 images, got %d", len(images))
+	}
+
+	// 5. Delete product image
+	err = service.DeleteProductImage(ctx, prod.ID, img1.ID)
+	if err != nil {
+		t.Fatalf("failed to delete image: %v", err)
+	}
+
+	// Deleting with mismatched productID should fail
+	err = service.DeleteProductImage(ctx, 88888, img2.ID)
+	if !errors.Is(err, domain.ErrNotFound) {
+		t.Errorf("expected ErrNotFound for wrong product ID, got %v", err)
+	}
+
+	// Remaining list should have 1 image
+	imagesAfter, _ := service.ListProductImages(ctx, prod.ID)
+	if len(imagesAfter) != 1 {
+		t.Errorf("expected 1 image after deletion, got %d", len(imagesAfter))
 	}
 }
 

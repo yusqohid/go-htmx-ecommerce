@@ -18,8 +18,9 @@ func setupStorefrontTest(t *testing.T) (*product.Service, *product.StorefrontHan
 	t.Helper()
 	productRepo := NewMockProductRepository()
 	fileRepo := NewMockProductFileRepository()
+	imageRepo := NewMockProductImageRepository()
 	storageMgr, _ := storage.New(t.TempDir())
-	service := product.NewService(productRepo, fileRepo, storageMgr)
+	service := product.NewService(productRepo, fileRepo, imageRepo, storageMgr)
 
 	mockFS := fstest.MapFS{
 		"layouts/public.html": &fstest.MapFile{

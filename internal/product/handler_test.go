@@ -19,9 +19,10 @@ import (
 func TestProductHandlerAuthorization(t *testing.T) {
 	productRepo := NewMockProductRepository()
 	fileRepo := NewMockProductFileRepository()
+	imageRepo := NewMockProductImageRepository()
 	tempDir := t.TempDir()
 	storageMgr, _ := storage.New(tempDir)
-	service := product.NewService(productRepo, fileRepo, storageMgr)
+	service := product.NewService(productRepo, fileRepo, imageRepo, storageMgr)
 	viewRenderer := view.New(templates.FS, true)
 	handler := product.NewHandler(service, nil, viewRenderer, "mock")
 
@@ -80,9 +81,10 @@ func TestProductHandlerAuthorization(t *testing.T) {
 func TestToggleStatusHTMX(t *testing.T) {
 	productRepo := NewMockProductRepository()
 	fileRepo := NewMockProductFileRepository()
+	imageRepo := NewMockProductImageRepository()
 	tempDir := t.TempDir()
 	storageMgr, _ := storage.New(tempDir)
-	service := product.NewService(productRepo, fileRepo, storageMgr)
+	service := product.NewService(productRepo, fileRepo, imageRepo, storageMgr)
 	viewRenderer := view.New(templates.FS, true)
 	handler := product.NewHandler(service, nil, viewRenderer, "mock")
 

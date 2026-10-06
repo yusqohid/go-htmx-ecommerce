@@ -149,6 +149,54 @@ a:hover {
   pointer-events: none;
 }
 
+/* Catalog Page Search (Spark Pro Style) */
+.catalog-search-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.catalog-search-input {
+  width: 100%;
+  background-color: #FFFFFF;
+  border: 1px solid var(--border-light);
+  border-radius: 50rem;
+  padding: 0.65rem 2.85rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-main);
+  outline: none;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease-in-out;
+}
+
+.catalog-search-input:focus {
+  border-color: rgba(5, 28, 18, 0.25);
+  box-shadow: 0 4px 14px rgba(7, 47, 31, 0.08);
+}
+
+.catalog-search-input::placeholder {
+  color: var(--text-muted-green);
+  opacity: 0.75;
+}
+
+.catalog-search-icon {
+  position: absolute;
+  left: 1.15rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted-green);
+  font-size: 1rem;
+  pointer-events: none;
+}
+
+.catalog-search-spinner {
+  position: absolute;
+  right: 1.15rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--brand-forest-medium);
+}
+
 /* User Profile Dropdown Button in Topbar */
 .btn-user-profile {
   display: inline-flex;

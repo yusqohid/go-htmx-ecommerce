@@ -60,15 +60,17 @@
         {{ range .Products }}
           <div class="col-12 col-md-6 col-lg-4">
             <div class="card border-light shadow-sm overflow-hidden h-100 card-rounded">
-              <!-- Thumbnail Cover Image -->
-              {{ if .ThumbnailURL }}
-                <img src="{{ .ThumbnailURL }}" class="card-img-top card-cover-img" alt="{{ .Name }}" loading="lazy">
-              {{ else }}
-                <div class="card-cover-img d-flex flex-column align-items-center justify-content-center bg-light text-muted">
-                  <i class="bi bi-box-seam fs-2 mb-1 text-muted-green"></i>
-                  <span class="fs-12 fw-semibold text-muted-green">Produk Digital</span>
-                </div>
-              {{ end }}
+              <!-- Thumbnail Cover Container with Consistent Aspect Ratio -->
+              <div class="card-cover-wrapper">
+                {{ if .ThumbnailURL }}
+                  <img src="{{ .ThumbnailURL }}" class="card-img-top card-cover-img" alt="{{ .Name }}" loading="lazy">
+                {{ else }}
+                  <div class="card-cover-placeholder">
+                    <i class="bi bi-box-seam fs-2 mb-1 text-muted-green"></i>
+                    <span class="fs-12 fw-semibold text-muted-green">Produk Digital</span>
+                  </div>
+                {{ end }}
+              </div>
 
               <!-- Card Body -->
               <div class="card-body d-flex flex-column justify-content-between p-3">

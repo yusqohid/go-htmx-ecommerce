@@ -1,6 +1,6 @@
 {{ define "content" }}
 
-<!-- 1. Hero Section (Spark Light Mode Card with Asterisk Illustration) -->
+<!-- 1. Hero Section (Spark Pro Light Mode Card with Asterisk Illustration) -->
 <section class="hero-spark-section">
   <div class="container">
     <div class="hero-spark-card">
@@ -36,10 +36,10 @@
           </div>
         </div>
 
-        <!-- Right: Geometric Asterisk Illustration (from Spark Admin) -->
+        <!-- Right: Geometric Asterisk Illustration (Explicitly Constrained) -->
         <div class="col-12 col-lg-5">
-          <div class="spark-asterisk-illustration">
-            <svg class="spark-asterisk-big" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <div class="spark-asterisk-illustration" style="max-width: 240px; height: 240px; margin: 0 auto; position: relative;">
+            <svg class="spark-asterisk-big" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 160px; height: 160px; max-width: 100%; max-height: 100%; display: block; margin: 0 auto;">
               <g transform="translate(50,50)">
                 <rect x="-7" y="-45" width="14" height="90" rx="7" ry="7" fill="#B4F105" />
                 <rect x="-7" y="-45" width="14" height="90" rx="7" ry="7" fill="#B4F105" transform="rotate(60)" />
@@ -47,7 +47,7 @@
               </g>
             </svg>
 
-            <div class="spark-mini-badge-card">
+            <div class="spark-mini-badge-card" style="position: absolute; bottom: 0; left: 0;">
               <span class="brand-icon-spark" style="width: 22px; height: 22px; padding: 3px;">
                 <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <g transform="translate(50,50)">
@@ -66,7 +66,7 @@
   </div>
 </section>
 
-<!-- 2. How It Works (3 Langkah Sesuai PRD) -->
+<!-- 2. How It Works (3 Langkah Sederhana) -->
 <section class="py-4">
   <div class="container">
     <div class="row g-4">
@@ -110,7 +110,7 @@
   </div>
 </section>
 
-<!-- 3. Featured Products Grid -->
+<!-- 3. Featured Products Grid (Spark Pro Pricing Card Style) -->
 <section class="py-5">
   <div class="container">
     <div class="d-flex align-items-end justify-content-between mb-4">
@@ -127,28 +127,37 @@
       <div class="row g-4">
         {{ range .FeaturedProducts }}
           <div class="col-12 col-md-6 col-lg-4">
-            <div class="product-card">
-              <div class="product-card-thumb">
-                {{ if .ThumbnailURL }}
-                  <img src="{{ .ThumbnailURL }}" alt="{{ .Name }}" loading="lazy">
-                {{ else }}
-                  <div class="thumb-placeholder">
-                    <i class="bi bi-box-seam thumb-icon"></i>
-                    <span class="small fw-semibold">Produk Digital</span>
-                  </div>
-                {{ end }}
-              </div>
-              <div class="product-card-body">
-                <h3 class="product-card-title">
-                  <a href="/products/{{ .Slug }}">{{ .Name }}</a>
-                </h3>
-                <p class="product-card-desc">{{ .ShortDescription }}</p>
-                <div class="product-card-footer">
-                  <span class="product-price">{{ formatMoney .Price }}</span>
-                  <a href="/products/{{ .Slug }}" class="btn-spark-outline py-2 px-3 small">
-                    Lihat Detail
-                  </a>
+            <div class="card pricing-card shadow-sm h-100 d-flex flex-column justify-content-between">
+              <div>
+                <div class="product-card-thumb mb-3">
+                  {{ if .ThumbnailURL }}
+                    <img src="{{ .ThumbnailURL }}" alt="{{ .Name }}" loading="lazy">
+                  {{ else }}
+                    <div class="thumb-placeholder">
+                      <i class="bi bi-box-seam thumb-icon"></i>
+                      <span class="small fw-semibold">Produk Digital</span>
+                    </div>
+                  {{ end }}
                 </div>
+                <div class="p-3 pt-0">
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="badge bg-light text-dark border fw-bold px-2.5 py-1 small">DIGITAL ASSET</span>
+                  </div>
+                  <h5 class="fw-bold text-main mb-1">
+                    <a href="/products/{{ .Slug }}" class="text-decoration-none text-dark">{{ .Name }}</a>
+                  </h5>
+                  <p class="text-muted-green small mb-3">{{ .ShortDescription }}</p>
+
+                  <div class="d-flex align-items-baseline mb-3">
+                    <span class="pricing-amount product-price">{{ formatMoney .Price }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="p-3 pt-0">
+                <a href="/products/{{ .Slug }}" class="btn-spark-primary w-100 py-2.5 small fw-semibold">
+                  Lihat Detail Produk
+                </a>
               </div>
             </div>
           </div>
@@ -169,8 +178,62 @@
   </div>
 </section>
 
-<!-- 4. Promo CTA Banner (Spark Promo Banner Light Style) -->
-<section class="py-4 mb-5">
+<!-- 4. Frequently Asked Questions (Spark Pro Accordion Style) -->
+<section class="py-5 bg-white border-top border-bottom">
+  <div class="container" style="max-width: 860px;">
+    <div class="text-center mb-5">
+      <h2 class="h3 fw-bold mb-2">Pertanyaan Umum (FAQ)</h2>
+      <p class="text-muted small">Jawaban untuk pertanyaan yang sering diajukan seputar produk dan transaksi.</p>
+    </div>
+
+    <div class="accordion" id="faqAccordion">
+      <!-- FAQ 1 -->
+      <div class="accordion-item">
+        <h2 class="accordion-header" id="faqHeading1">
+          <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faqCollapse1" aria-expanded="true" aria-controls="faqCollapse1">
+            Bagaimana cara mendapatkan file setelah pembayaran?
+          </button>
+        </h2>
+        <div id="faqCollapse1" class="accordion-collapse collapse show" aria-labelledby="faqHeading1" data-bs-parent="#faqAccordion">
+          <div class="accordion-body">
+            Setelah pembayaran Anda diverifikasi oleh gerbang pembayaran, pesanan Anda akan langsung berstatus lunas. Tautan unduh produk akan otomatis aktif dan dapat diakses kapan saja melalui halaman <strong>Pesanan Saya</strong> di akun Anda.
+          </div>
+        </div>
+      </div>
+
+      <!-- FAQ 2 -->
+      <div class="accordion-item">
+        <h2 class="accordion-header" id="faqHeading2">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqCollapse2" aria-expanded="false" aria-controls="faqCollapse2">
+            Metode pembayaran apa saja yang didukung?
+          </button>
+        </h2>
+        <div id="faqCollapse2" class="accordion-collapse collapse" aria-labelledby="faqHeading2" data-bs-parent="#faqAccordion">
+          <div class="accordion-body">
+            Kami mendukung berbagai metode pembayaran melalui penyedia resmi terintegrasi (seperti QRIS, transfer bank virtual account, kartu kredit, dan e-wallet) untuk menjamin keamanan setiap transaksi Anda.
+          </div>
+        </div>
+      </div>
+
+      <!-- FAQ 3 -->
+      <div class="accordion-item">
+        <h2 class="accordion-header" id="faqHeading3">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqCollapse3" aria-expanded="false" aria-controls="faqCollapse3">
+            Apakah saya bisa mengunduh ulang produk yang sudah dibeli?
+          </button>
+        </h2>
+        <div id="faqCollapse3" class="accordion-collapse collapse" aria-labelledby="faqHeading3" data-bs-parent="#faqAccordion">
+          <div class="accordion-body">
+            Ya! Seluruh produk yang sudah Anda beli tersimpan secara permanen di riwayat akun Sellora Anda. Anda dapat mengunduh kembali file produk tersebut kapan pun Anda membutuhkannya tanpa biaya tambahan.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 5. Promo CTA Banner (Spark Pro Promo Card Style) -->
+<section class="py-5">
   <div class="container">
     <div class="hero-spark-card text-center py-5">
       <h2 class="h3 fw-bold text-dark mb-2">Siap memulai proyek Anda berikutnya?</h2>

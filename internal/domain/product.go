@@ -21,12 +21,14 @@ type Product struct {
 	Slug             string        `json:"slug"`
 	ShortDescription string        `json:"short_description"`
 	FullDescription  string        `json:"full_description"`
-	Price            int64         `json:"price"` // in smallest currency unit (e.g. IDR)
-	ThumbnailURL     string        `json:"thumbnail_url"`
-	Status           ProductStatus `json:"status"`
-	Files            []ProductFile `json:"files,omitempty"`
-	CreatedAt        time.Time     `json:"created_at"`
-	UpdatedAt        time.Time     `json:"updated_at"`
+	Price            int64          `json:"price"` // in smallest currency unit (e.g. IDR)
+	ThumbnailURL     string         `json:"thumbnail_url"`
+	DemoURL          string         `json:"demo_url"`
+	Status           ProductStatus  `json:"status"`
+	Files            []ProductFile  `json:"files,omitempty"`
+	Images           []ProductImage `json:"images,omitempty"`
+	CreatedAt        time.Time      `json:"created_at"`
+	UpdatedAt        time.Time      `json:"updated_at"`
 }
 
 // IsPublished checks if the product is active and visible to customers.
@@ -47,6 +49,15 @@ type ProductFile struct {
 	CreatedAt    time.Time `json:"created_at"`
 }
 
+// ProductImage represents an additional preview/gallery image for a product.
+type ProductImage struct {
+	ID           int64     `json:"id"`
+	ProductID    int64     `json:"product_id"`
+	ImageURL     string    `json:"image_url"`
+	DisplayOrder int       `json:"display_order"`
+	CreatedAt    time.Time `json:"created_at"`
+}
+
 // ProductRepository defines persistence operations for products.
 type ProductRepository interface {
 	Create(ctx context.Context, product *Product) error
@@ -63,5 +74,13 @@ type ProductFileRepository interface {
 	Create(ctx context.Context, file *ProductFile) error
 	FindByID(ctx context.Context, id int64) (*ProductFile, error)
 	FindByProductID(ctx context.Context, productID int64) ([]ProductFile, error)
+	Delete(ctx context.Context, id int64) error
+}
+
+// ProductImageRepository defines persistence operations for product gallery images.
+type ProductImageRepository interface {
+	Create(ctx context.Context, image *ProductImage) error
+	FindByID(ctx context.Context, id int64) (*ProductImage, error)
+	FindByProductID(ctx context.Context, productID int64) ([]ProductImage, error)
 	Delete(ctx context.Context, id int64) error
 }

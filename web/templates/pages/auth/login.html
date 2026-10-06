@@ -1,10 +1,26 @@
 {{ define "content" }}
-<div class="w-100" style="max-width: 440px;">
-  <div class="spark-card">
-    <div class="text-center mb-4">
-      <h1 class="h4 fw-bold text-dark mb-1">Masuk ke Sellora</h1>
-      <p class="text-muted small">Masukkan email dan kata sandi akun Anda</p>
-    </div>
+<div class="login-wrapper">
+  <!-- Glowing background shapes for modern visual appearance -->
+  <div class="login-bg-shape login-bg-shape-1"></div>
+  <div class="login-bg-shape login-bg-shape-2"></div>
+
+  <!-- Main centered login card -->
+  <div class="login-card">
+    <!-- Brand Identity with Spark Asterisk -->
+    <a href="/" class="login-brand text-decoration-none">
+      <span class="brand-icon-spark" style="width: 32px; height: 32px; padding: 4px;">
+        <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <g transform="translate(50,50)">
+            <rect x="-7" y="-45" width="14" height="90" rx="7" ry="7" fill="#B4F105" />
+            <rect x="-7" y="-45" width="14" height="90" rx="7" ry="7" fill="#B4F105" transform="rotate(60)" />
+            <rect x="-7" y="-45" width="14" height="90" rx="7" ry="7" fill="#B4F105" transform="rotate(120)" />
+          </g>
+        </svg>
+      </span>
+      <span>Sellora</span>
+    </a>
+
+    <p class="login-subtitle">Masuk ke Sellora</p>
 
     {{ if .Error }}
     <div class="alert alert-danger d-flex align-items-center gap-2 rounded-3 py-2 px-3 small mb-4" role="alert">
@@ -19,44 +35,50 @@
       {{ end }}
       <input type="hidden" name="redirect" value="{{ .Redirect }}">
 
-      <div class="mb-3">
-        <label for="email" class="form-label small fw-semibold text-secondary">Alamat Email</label>
-        <input 
-          type="email" 
-          id="email" 
-          name="email" 
-          value="{{ .Email }}" 
-          required 
-          autocomplete="email"
-          placeholder="nama@email.com"
-          class="form-control rounded-3 py-2 px-3 fs-6"
-        >
+      <!-- Email Input Group -->
+      <div class="login-form-group mb-3">
+        <label for="email" class="login-form-label">Alamat Email</label>
+        <div class="login-input-group">
+          <i class="bi bi-envelope input-icon"></i>
+          <input 
+            type="email" 
+            id="email" 
+            name="email" 
+            value="{{ .Email }}" 
+            required 
+            autocomplete="email"
+            placeholder="nama@email.com" 
+            class="login-input"
+          >
+        </div>
       </div>
 
-      <div class="mb-4">
-        <label for="password" class="form-label small fw-semibold text-secondary">Kata Sandi</label>
-        <input 
-          type="password" 
-          id="password" 
-          name="password" 
-          required 
-          autocomplete="current-password"
-          placeholder="••••••••"
-          class="form-control rounded-3 py-2 px-3 fs-6"
-        >
+      <!-- Password Input Group -->
+      <div class="login-form-group mb-4">
+        <label for="password" class="login-form-label">Kata Sandi</label>
+        <div class="login-input-group">
+          <i class="bi bi-shield-lock input-icon"></i>
+          <input 
+            type="password" 
+            id="password" 
+            name="password" 
+            required 
+            autocomplete="current-password"
+            placeholder="••••••••" 
+            class="login-input login-input-password"
+          >
+        </div>
       </div>
 
-      <button 
-        type="submit" 
-        class="btn btn-spark-primary w-100 py-2.5 fs-6 fw-semibold mb-3"
-      >
-        Masuk
+      <button type="submit" class="btn-login">
+        <span>Masuk</span>
+        <i class="bi bi-arrow-right"></i>
       </button>
     </form>
 
-    <div class="pt-3 border-top text-center text-muted small">
+    <div class="pt-4 border-top text-center text-muted small mt-4">
       Belum memiliki akun? 
-      <a href="/register" class="text-dark text-decoration-none fw-semibold ms-1">Daftar sekarang</a>
+      <a href="/register" class="text-dark fw-bold text-decoration-none ms-1">Daftar sekarang</a>
     </div>
   </div>
 </div>

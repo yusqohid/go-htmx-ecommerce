@@ -14,6 +14,7 @@ import (
 
 	"github.com/yusqohid/go-htmx-ecommerce/internal/auth"
 	"github.com/yusqohid/go-htmx-ecommerce/internal/config"
+	"github.com/yusqohid/go-htmx-ecommerce/internal/coupon"
 	"github.com/yusqohid/go-htmx-ecommerce/internal/customer"
 	"github.com/yusqohid/go-htmx-ecommerce/internal/database"
 	"github.com/yusqohid/go-htmx-ecommerce/internal/email"
@@ -115,8 +116,9 @@ func main() {
 		}
 		emailService := email.NewService(emailSender, cfg.AppBaseURL)
 
+		couponRepo := coupon.NewCouponRepository(db.DB)
 		orderRepo := order.NewOrderRepository(db.DB)
-		orderService := order.NewService(orderRepo, productRepo, paymentProvider, emailService)
+		orderService := order.NewService(orderRepo, productRepo, couponRepo, paymentProvider, emailService)
 		snapScriptURL := "https://app.sandbox.midtrans.com/snap/snap.js"
 		if cfg.MidtransIsProduction {
 			snapScriptURL = "https://app.midtrans.com/snap/snap.js"

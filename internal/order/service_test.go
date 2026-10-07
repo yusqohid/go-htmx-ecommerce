@@ -195,7 +195,7 @@ func TestService_CreateOrder_Success(t *testing.T) {
 	orderRepo := NewMockOrderRepo()
 	productRepo := NewMockProductRepo()
 	paymentProv := &MockPaymentProvider{}
-	service := order.NewService(orderRepo, productRepo, paymentProv, nil)
+	service := order.NewService(orderRepo, productRepo, nil, paymentProv, nil)
 	ctx := context.Background()
 
 	customer := &domain.User{ID: 10, Name: "Budi", Email: "budi@example.com"}
@@ -232,7 +232,7 @@ func TestService_CreateOrder_Success(t *testing.T) {
 func TestService_CreateOrder_UnpublishedProduct(t *testing.T) {
 	orderRepo := NewMockOrderRepo()
 	productRepo := NewMockProductRepo()
-	service := order.NewService(orderRepo, productRepo, &MockPaymentProvider{}, nil)
+	service := order.NewService(orderRepo, productRepo, nil, &MockPaymentProvider{}, nil)
 	ctx := context.Background()
 
 	customer := &domain.User{ID: 10}
@@ -256,7 +256,7 @@ func TestService_CreateOrder_UnpublishedProduct(t *testing.T) {
 func TestService_CreateOrder_AlreadyPurchased(t *testing.T) {
 	orderRepo := NewMockOrderRepo()
 	productRepo := NewMockProductRepo()
-	service := order.NewService(orderRepo, productRepo, &MockPaymentProvider{}, nil)
+	service := order.NewService(orderRepo, productRepo, nil, &MockPaymentProvider{}, nil)
 	ctx := context.Background()
 
 	customer := &domain.User{ID: 10}
@@ -287,7 +287,7 @@ func TestService_CreateOrder_AlreadyPurchased(t *testing.T) {
 
 func TestService_GetOrder_Authorization(t *testing.T) {
 	orderRepo := NewMockOrderRepo()
-	service := order.NewService(orderRepo, NewMockProductRepo(), &MockPaymentProvider{}, nil)
+	service := order.NewService(orderRepo, NewMockProductRepo(), nil, &MockPaymentProvider{}, nil)
 	ctx := context.Background()
 
 	ord := &domain.Order{
@@ -319,7 +319,7 @@ func TestService_GetOrder_Authorization(t *testing.T) {
 
 func TestService_UpdateOrderStatus(t *testing.T) {
 	orderRepo := NewMockOrderRepo()
-	service := order.NewService(orderRepo, NewMockProductRepo(), &MockPaymentProvider{}, nil)
+	service := order.NewService(orderRepo, NewMockProductRepo(), nil, &MockPaymentProvider{}, nil)
 	ctx := context.Background()
 
 	ord := &domain.Order{
@@ -369,7 +369,7 @@ func TestService_SyncPaymentStatus(t *testing.T) {
 			Amount:           150000,
 		},
 	}
-	service := order.NewService(orderRepo, NewMockProductRepo(), mockProvider, nil)
+	service := order.NewService(orderRepo, NewMockProductRepo(), nil, mockProvider, nil)
 	ctx := context.Background()
 
 	ord := &domain.Order{
@@ -395,7 +395,7 @@ func TestService_EmailNotificationOnPayment(t *testing.T) {
 	orderRepo := NewMockOrderRepo()
 	productRepo := NewMockProductRepo()
 	notifier := &MockEmailNotifier{}
-	service := order.NewService(orderRepo, productRepo, &MockPaymentProvider{}, notifier)
+	service := order.NewService(orderRepo, productRepo, nil, &MockPaymentProvider{}, notifier)
 	ctx := context.Background()
 
 	ord := &domain.Order{
@@ -424,3 +424,169 @@ func TestService_EmailNotificationOnPayment(t *testing.T) {
 		t.Errorf("expected reference ORD-EMAIL-01, got %s", notified[0].Reference)
 	}
 }
+
+type MockOrderCouponRepo struct {
+	mu      sync.RWMutex
+	coupons map[string]*domain.Coupon
+	byID    map[int64]*domain.Coupon
+}
+
+func NewMockOrderCouponRepo() *MockOrderCouponRepo {
+	return &MockOrderCouponRepo{
+		coupons: make(map[string]*domain.Coupon),
+		byID:    make(map[int64]*domain.Coupon),
+	}
+}
+
+func (m *MockOrderCouponRepo) Create(ctx context.Context, c *domain.Coupon) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	cp := *c
+	m.coupons[c.Code] = &cp
+	m.byID[c.ID] = &cp
+	return nil
+}
+
+func (m *MockOrderCouponRepo) FindByID(ctx context.Context, id int64) (*domain.Coupon, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	c, ok := m.byID[id]
+	if !ok {
+		return nil, domain.ErrNotFound
+	}
+	cp := *c
+	return &cp, nil
+}
+
+func (m *MockOrderCouponRepo) FindByCode(ctx context.Context, code string) (*domain.Coupon, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	c, ok := m.coupons[code]
+	if !ok {
+		return nil, domain.ErrNotFound
+	}
+	cp := *c
+	return &cp, nil
+}
+
+func (m *MockOrderCouponRepo) ListAll(ctx context.Context, limit, offset int) ([]domain.Coupon, int, error) {
+	return nil, 0, nil
+}
+
+func (m *MockOrderCouponRepo) Update(ctx context.Context, c *domain.Coupon) error {
+	return nil
+}
+
+func (m *MockOrderCouponRepo) IncrementUsedCount(ctx context.Context, id int64) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	c, ok := m.byID[id]
+	if !ok {
+		return domain.ErrNotFound
+	}
+	c.UsedCount++
+	return nil
+}
+
+func (m *MockOrderCouponRepo) Delete(ctx context.Context, id int64) error {
+	return nil
+}
+
+func TestService_CreateOrder_WithCoupon(t *testing.T) {
+	orderRepo := NewMockOrderRepo()
+	productRepo := NewMockProductRepo()
+	couponRepo := NewMockOrderCouponRepo()
+	paymentProv := &MockPaymentProvider{}
+	service := order.NewService(orderRepo, productRepo, couponRepo, paymentProv, nil)
+	ctx := context.Background()
+
+	customer := &domain.User{ID: 10, Name: "Budi", Email: "budi@example.com"}
+	product := &domain.Product{
+		ID:     1,
+		Name:   "Masterclass",
+		Price:  100000,
+		Status: domain.StatusPublished,
+	}
+	_ = productRepo.Create(ctx, product)
+
+	_ = couponRepo.Create(ctx, &domain.Coupon{
+		ID:            5,
+		Code:          "HEMAT20",
+		DiscountType:  domain.DiscountTypePercentage,
+		DiscountValue: 20,
+		IsActive:      true,
+	})
+
+	// 1. Success with coupon
+	ord, _, err := service.CreateOrder(ctx, order.CreateOrderInput{
+		Customer:   customer,
+		ProductID:  product.ID,
+		CouponCode: "hemat20",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error creating order with coupon: %v", err)
+	}
+
+	if ord.TotalAmount != 80000 {
+		t.Errorf("got total %d, want 80000 (after 20%% discount)", ord.TotalAmount)
+	}
+	if ord.DiscountAmount != 20000 {
+		t.Errorf("got discount %d, want 20000", ord.DiscountAmount)
+	}
+	if ord.CouponID == nil || *ord.CouponID != 5 {
+		t.Errorf("expected CouponID to be 5, got %v", ord.CouponID)
+	}
+
+	// 2. Error with invalid/nonexistent coupon
+	_, _, err = service.CreateOrder(ctx, order.CreateOrderInput{
+		Customer:   customer,
+		ProductID:  product.ID,
+		CouponCode: "INVALIDCODE",
+	})
+	if !errors.Is(err, domain.ErrCouponNotFound) {
+		t.Errorf("expected ErrCouponNotFound, got %v", err)
+	}
+}
+
+func TestService_OrderPaid_IncrementsCouponUsage(t *testing.T) {
+	orderRepo := NewMockOrderRepo()
+	productRepo := NewMockProductRepo()
+	couponRepo := NewMockOrderCouponRepo()
+	service := order.NewService(orderRepo, productRepo, couponRepo, &MockPaymentProvider{}, nil)
+	ctx := context.Background()
+
+	couponID := int64(7)
+	_ = couponRepo.Create(ctx, &domain.Coupon{
+		ID:            couponID,
+		Code:          "SALE10",
+		DiscountType:  domain.DiscountTypeFixed,
+		DiscountValue: 10000,
+		IsActive:      true,
+		UsedCount:     0,
+	})
+
+	ord := &domain.Order{
+		Reference:      "ORD-COUPON-01",
+		CustomerID:     10,
+		Status:         domain.StatusPending,
+		TotalAmount:    90000,
+		DiscountAmount: 10000,
+		CouponID:       &couponID,
+	}
+	_ = orderRepo.Create(ctx, ord)
+
+	// Update to paid
+	err := service.UpdateOrderStatus(ctx, ord.ID, domain.StatusPaid, "TX-COUPON-01")
+	if err != nil {
+		t.Fatalf("failed to update status: %v", err)
+	}
+
+	// Wait briefly for asynchronous increment goroutine
+	time.Sleep(50 * time.Millisecond)
+
+	c, _ := couponRepo.FindByID(ctx, couponID)
+	if c.UsedCount != 1 {
+		t.Errorf("expected coupon used_count to be 1, got %d", c.UsedCount)
+	}
+}
+

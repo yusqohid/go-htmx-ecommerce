@@ -23,7 +23,7 @@ func setupOrderHandlerTest(t *testing.T) (*order.Service, *MockProductRepo, *Moc
 
 	orderRepo := NewMockOrderRepo()
 	productRepo := NewMockProductRepo()
-	service := order.NewService(orderRepo, productRepo, &MockPaymentProvider{}, nil)
+	service := order.NewService(orderRepo, productRepo, nil, &MockPaymentProvider{}, nil)
 
 	mockFS := fstest.MapFS{
 		"layouts/public.html": &fstest.MapFile{

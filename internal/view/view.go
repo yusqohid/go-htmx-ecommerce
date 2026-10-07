@@ -70,6 +70,30 @@ func FuncMap() template.FuncMap {
 		},
 		"renderMarkdown": RenderMarkdown,
 		"embedVideoURL":  EmbedVideoURL,
+		"formatDateTimeInput": func(t *time.Time) string {
+			if t == nil {
+				return ""
+			}
+			return t.Format("2006-01-02T15:04")
+		},
+		"derefInt": func(v *int) int {
+			if v == nil {
+				return 0
+			}
+			return *v
+		},
+		"derefInt64": func(v *int64) int64 {
+			if v == nil {
+				return 0
+			}
+			return *v
+		},
+		"derefTime": func(t *time.Time) time.Time {
+			if t == nil {
+				return time.Time{}
+			}
+			return *t
+		},
 	}
 }
 

@@ -1,0 +1,156 @@
+{{ define "content" }}
+<!-- START: Page Header Banner -->
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Coupons & Discounts</h1>
+    <p class="page-subtitle">Manage promotional codes, percentage or fixed discounts, and usage limits.</p>
+  </div>
+  <a href="/admin/coupons/new" class="btn-custom btn-custom-primary text-decoration-none">
+    <i class="bi bi-plus-lg me-1"></i> Add Coupon
+  </a>
+</div>
+<!-- END: Page Header Banner -->
+
+<!-- START: Table Card Container -->
+<div class="table-card-custom">
+  <div class="table-responsive">
+    <table class="table-custom">
+      <thead>
+        <tr>
+          <th>Coupon Code</th>
+          <th>Discount Value</th>
+          <th>Min Purchase</th>
+          <th>Usage Limit</th>
+          <th>Validity Period</th>
+          <th>Status</th>
+          <th class="text-center">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{ if .Coupons }}
+          {{ range .Coupons }}
+          <tr>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-light text-dark border font-monospace px-2.5 py-1.5 fs-6 fw-bold">
+                  {{ .Code }}
+                </span>
+                <button type="button" class="btn-action-icon copy-ref-btn" data-clipboard="{{ .Code }}" title="Copy Code">
+                  <i class="bi bi-clipboard"></i>
+                </button>
+              </div>
+            </td>
+            <td>
+              {{ if eq .DiscountType "percentage" }}
+                <div class="fw-semibold text-primary">
+                  <i class="bi bi-percent me-1"></i>{{ .DiscountValue }}% OFF
+                </div>
+                {{ if .MaxDiscountAmount }}
+                  <small class="text-muted d-block">Max cap: {{ formatMoney (derefInt64 .MaxDiscountAmount) }}</small>
+                {{ end }}
+              {{ else }}
+                <div class="fw-semibold text-success">
+                  <i class="bi bi-tag-fill me-1"></i>{{ formatMoney .DiscountValue }} OFF
+                </div>
+              {{ end }}
+            </td>
+            <td>
+              {{ if gt .MinPurchaseAmount 0 }}
+                <span class="text-dark fw-medium">{{ formatMoney .MinPurchaseAmount }}</span>
+              {{ else }}
+                <span class="text-muted fst-italic">No Minimum</span>
+              {{ end }}
+            </td>
+            <td>
+              <div class="d-flex align-items-center gap-1.5">
+                <span class="fw-bold text-dark">{{ .UsedCount }}</span>
+                <span class="text-muted">/</span>
+                {{ if .UsageLimit }}
+                  <span class="text-muted">{{ derefInt .UsageLimit }} used</span>
+                {{ else }}
+                  <span class="badge bg-secondary-subtle text-secondary rounded-pill px-2 py-0.5 small">Unlimited</span>
+                {{ end }}
+              </div>
+            </td>
+            <td>
+              <div class="small">
+                {{ if or .StartsAt .ExpiresAt }}
+                  {{ if .StartsAt }}
+                    <div class="text-muted"><i class="bi bi-calendar-event me-1"></i>From: <strong>{{ formatDateShort (derefTime .StartsAt) }}</strong></div>
+                  {{ end }}
+                  {{ if .ExpiresAt }}
+                    <div class="text-muted"><i class="bi bi-calendar-x me-1"></i>Until: <strong>{{ formatDateShort (derefTime .ExpiresAt) }}</strong></div>
+                  {{ end }}
+                {{ else }}
+                  <span class="text-muted fst-italic">Always Active</span>
+                {{ end }}
+              </div>
+            </td>
+            <td>
+              <div id="status-badge-{{ .ID }}">
+                <span class="badge-table {{ if .IsActive }}success{{ else }}pending{{ end }}" 
+                      style="cursor: pointer;" 
+                      hx-post="/admin/coupons/{{ .ID }}/toggle-status" 
+                      hx-target="#status-badge-{{ .ID }}" 
+                      hx-swap="outerHTML" 
+                      title="Click to toggle status">
+                  {{ if .IsActive }}Active{{ else }}Inactive{{ end }}
+                </span>
+              </div>
+            </td>
+            <td class="text-center">
+              <div class="action-btn-group justify-content-center">
+                <a href="/admin/coupons/{{ .ID }}/edit" class="btn-action-icon text-decoration-none" title="Edit Coupon">
+                  <i class="bi bi-pencil-fill"></i>
+                </a>
+                <button type="button" class="btn-action-icon text-danger" title="Delete Coupon" data-bs-toggle="modal" data-bs-target="#deleteModal{{ .ID }}">
+                  <i class="bi bi-trash-fill"></i>
+                </button>
+              </div>
+
+              <!-- Delete Confirmation Modal -->
+              <div class="modal fade text-start" id="deleteModal{{ .ID }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ .ID }}" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                  <div class="modal-content border-0 shadow">
+                    <div class="modal-header">
+                      <h5 class="modal-title fw-bold" id="deleteModalLabel{{ .ID }}">Delete Coupon</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                      Are you sure you want to delete coupon <strong class="font-monospace">{{ .Code }}</strong>? Existing completed orders will preserve their historical discount records.
+                    </div>
+                    <div class="modal-footer border-top-0">
+                      <button type="button" class="btn-custom btn-custom-secondary btn-custom-sm" data-bs-dismiss="modal">Cancel</button>
+                      <form method="POST" action="/admin/coupons/{{ .ID }}/delete">
+                        <input type="hidden" name="csrf_token" value="">
+                        <button type="submit" class="btn btn-danger btn-sm px-3 rounded-pill">Delete</button>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+          {{ end }}
+        {{ else }}
+          <tr>
+            <td colspan="7">
+              <div class="empty-state-card text-center py-5">
+                <div class="mb-3">
+                  <i class="bi bi-ticket-perforated text-muted display-4"></i>
+                </div>
+                <h5 class="fw-bold text-dark mb-1">No Coupons Created Yet</h5>
+                <p class="text-muted small mb-3">Create your first promotion code to drive customer sales and discounts.</p>
+                <a href="/admin/coupons/new" class="btn-custom btn-custom-primary text-decoration-none">
+                  <i class="bi bi-plus-lg me-1"></i> Create Coupon
+                </a>
+              </div>
+            </td>
+          </tr>
+        {{ end }}
+      </tbody>
+    </table>
+  </div>
+</div>
+<!-- END: Table Card Container -->
+{{ end }}

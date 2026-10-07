@@ -81,6 +81,7 @@ func main() {
 	var downloadHandler *product.DownloadHandler
 	var customerHandler *customer.Handler
 	var adminOrderHandler *order.AdminHandler
+	var couponHandler *coupon.Handler
 
 	if db != nil {
 		userRepo := auth.NewUserRepository(db.DB)
@@ -99,6 +100,7 @@ func main() {
 			log.Fatalf("Failed to initialize payment provider: %v", err)
 		}
 		paymentEventRepo := payment.NewPaymentEventRepository(db.DB)
+
 		var emailSender email.Sender
 		if cfg.SMTPHost != "" {
 			emailSender = email.NewSMTPSender(email.SMTPConfig{
@@ -117,6 +119,9 @@ func main() {
 		emailService := email.NewService(emailSender, cfg.AppBaseURL)
 
 		couponRepo := coupon.NewCouponRepository(db.DB)
+		couponService := coupon.NewService(couponRepo)
+		couponHandler = coupon.NewHandler(couponService, viewRenderer)
+
 		orderRepo := order.NewOrderRepository(db.DB)
 		orderService := order.NewService(orderRepo, productRepo, couponRepo, paymentProvider, emailService)
 		snapScriptURL := "https://app.sandbox.midtrans.com/snap/snap.js"
@@ -147,6 +152,7 @@ func main() {
 		DownloadHandler:   downloadHandler,
 		CustomerHandler:   customerHandler,
 		AdminOrderHandler: adminOrderHandler,
+		CouponHandler:     couponHandler,
 		Logger:            appLogger,
 	})
 	srv := &http.Server{

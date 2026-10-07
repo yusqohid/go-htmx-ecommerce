@@ -7,8 +7,10 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/yusqohid/go-htmx-ecommerce/internal/auth"
+	"github.com/yusqohid/go-htmx-ecommerce/internal/coupon"
 	"github.com/yusqohid/go-htmx-ecommerce/internal/domain"
 	"github.com/yusqohid/go-htmx-ecommerce/internal/view"
 )
@@ -17,6 +19,7 @@ import (
 type Handler struct {
 	orderService    *Service
 	productRepo     domain.ProductRepository
+	couponService   *coupon.Service
 	view            *view.View
 	paymentProvider string
 	clientKey       string
@@ -27,6 +30,7 @@ type Handler struct {
 func NewHandler(
 	orderService *Service,
 	productRepo domain.ProductRepository,
+	couponService *coupon.Service,
 	view *view.View,
 	paymentProvider string,
 	clientKey string,
@@ -35,6 +39,7 @@ func NewHandler(
 	return &Handler{
 		orderService:    orderService,
 		productRepo:     productRepo,
+		couponService:   couponService,
 		view:            view,
 		paymentProvider: paymentProvider,
 		clientKey:       clientKey,
@@ -83,6 +88,25 @@ func (h *Handler) CheckoutPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	couponCode := strings.TrimSpace(r.URL.Query().Get("coupon"))
+	var appliedCoupon *domain.Coupon
+	var discountAmount int64
+	var couponError string
+	var couponSuccess string
+	totalAmount := product.Price
+
+	if couponCode != "" && h.couponService != nil {
+		c, disc, err := h.couponService.ValidateAndCalculate(r.Context(), couponCode, product.Price)
+		if err != nil {
+			couponError = translateCouponError(err)
+		} else {
+			appliedCoupon = c
+			discountAmount = disc
+			totalAmount = product.Price - disc
+			couponSuccess = fmt.Sprintf("Kupon %s berhasil diterapkan!", c.Code)
+		}
+	}
+
 	_ = h.view.Render(w, "public", "storefront/checkout", map[string]any{
 		"Title":           "Checkout - " + product.Name,
 		"User":            user,
@@ -90,6 +114,105 @@ func (h *Handler) CheckoutPage(w http.ResponseWriter, r *http.Request) {
 		"PaymentProvider": strings.ToUpper(h.paymentProvider),
 		"ClientKey":       h.clientKey,
 		"SnapScriptURL":   h.snapScriptURL,
+		"Coupon":          appliedCoupon,
+		"CouponCode":      couponCode,
+		"DiscountAmount":  discountAmount,
+		"TotalAmount":     totalAmount,
+		"CouponError":     couponError,
+		"CouponSuccess":   couponSuccess,
+	})
+}
+
+// ApplyCoupon validates a coupon code and renders the updated checkout summary via HTMX.
+func (h *Handler) ApplyCoupon(w http.ResponseWriter, r *http.Request) {
+	user := auth.UserFromContext(r.Context())
+	if user == nil {
+		http.Redirect(w, r, "/login?redirect="+r.URL.Path, http.StatusSeeOther)
+		return
+	}
+
+	productIDStr := chi.URLParam(r, "productID")
+	productID, err := strconv.ParseInt(productIDStr, 10, 64)
+	if err != nil {
+		http.Redirect(w, r, "/products", http.StatusSeeOther)
+		return
+	}
+
+	product, err := h.productRepo.FindByID(r.Context(), productID)
+	if err != nil || !product.IsPublished() {
+		http.Redirect(w, r, "/products", http.StatusSeeOther)
+		return
+	}
+
+	couponCode := strings.TrimSpace(r.FormValue("coupon_code"))
+	var appliedCoupon *domain.Coupon
+	var discountAmount int64
+	var couponError string
+	var couponSuccess string
+	totalAmount := product.Price
+
+	if couponCode == "" {
+		couponError = "Silakan masukkan kode kupon."
+	} else if h.couponService != nil {
+		c, disc, err := h.couponService.ValidateAndCalculate(r.Context(), couponCode, product.Price)
+		if err != nil {
+			couponError = translateCouponError(err)
+		} else {
+			appliedCoupon = c
+			discountAmount = disc
+			totalAmount = product.Price - disc
+			couponSuccess = fmt.Sprintf("Kupon %s berhasil diterapkan!", c.Code)
+		}
+	}
+
+	_ = h.view.Render(w, "public", "storefront/checkout", map[string]any{
+		"Title":           "Checkout - " + product.Name,
+		"User":            user,
+		"Product":         product,
+		"PaymentProvider": strings.ToUpper(h.paymentProvider),
+		"ClientKey":       h.clientKey,
+		"SnapScriptURL":   h.snapScriptURL,
+		"Coupon":          appliedCoupon,
+		"CouponCode":      couponCode,
+		"DiscountAmount":  discountAmount,
+		"TotalAmount":     totalAmount,
+		"CouponError":     couponError,
+		"CouponSuccess":   couponSuccess,
+	})
+}
+
+// RemoveCoupon removes the applied coupon and renders the updated checkout summary via HTMX.
+func (h *Handler) RemoveCoupon(w http.ResponseWriter, r *http.Request) {
+	user := auth.UserFromContext(r.Context())
+	if user == nil {
+		http.Redirect(w, r, "/login?redirect="+r.URL.Path, http.StatusSeeOther)
+		return
+	}
+
+	productIDStr := chi.URLParam(r, "productID")
+	productID, err := strconv.ParseInt(productIDStr, 10, 64)
+	if err != nil {
+		http.Redirect(w, r, "/products", http.StatusSeeOther)
+		return
+	}
+
+	product, err := h.productRepo.FindByID(r.Context(), productID)
+	if err != nil || !product.IsPublished() {
+		http.Redirect(w, r, "/products", http.StatusSeeOther)
+		return
+	}
+
+	_ = h.view.Render(w, "public", "storefront/checkout", map[string]any{
+		"Title":           "Checkout - " + product.Name,
+		"User":            user,
+		"Product":         product,
+		"PaymentProvider": strings.ToUpper(h.paymentProvider),
+		"ClientKey":       h.clientKey,
+		"SnapScriptURL":   h.snapScriptURL,
+		"Coupon":          nil,
+		"CouponCode":      "",
+		"DiscountAmount":  0,
+		"TotalAmount":     product.Price,
 	})
 }
 
@@ -108,16 +231,31 @@ func (h *Handler) ProcessCheckout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	couponCode := strings.TrimSpace(r.FormValue("coupon_code"))
+
 	order, checkoutURL, err := h.orderService.CreateOrder(r.Context(), CreateOrderInput{
-		Customer:  user,
-		ProductID: productID,
+		Customer:   user,
+		ProductID:  productID,
+		CouponCode: couponCode,
 	})
 	if err != nil {
-		errMsg := "Unable to process order. Please try again."
+		errMsg := "Gagal memproses pesanan. Silakan coba lagi."
 		if errors.Is(err, ErrAlreadyPurchased) {
-			errMsg = "You have already purchased this digital product."
+			errMsg = "Anda sudah pernah membeli produk digital ini."
 		} else if errors.Is(err, ErrProductNotAvailable) {
-			errMsg = "This product is currently unavailable."
+			errMsg = "Produk ini saat ini tidak tersedia."
+		} else if errors.Is(err, domain.ErrCouponNotFound) {
+			errMsg = "Kode kupon tidak ditemukan."
+		} else if errors.Is(err, domain.ErrCouponInactive) {
+			errMsg = "Kupon saat ini sedang tidak aktif."
+		} else if errors.Is(err, domain.ErrCouponExpired) {
+			errMsg = "Kupon telah kedaluwarsa."
+		} else if errors.Is(err, domain.ErrCouponNotStarted) {
+			errMsg = "Promo kupon belum dimulai."
+		} else if errors.Is(err, domain.ErrCouponLimitReached) {
+			errMsg = "Kuota pemakaian kupon telah habis."
+		} else if errors.Is(err, domain.ErrCouponMinPurchase) {
+			errMsg = "Total belanja belum memenuhi minimum pembelian kupon ini."
 		}
 
 		product, fetchErr := h.productRepo.FindByID(r.Context(), productID)
@@ -127,11 +265,15 @@ func (h *Handler) ProcessCheckout(w http.ResponseWriter, r *http.Request) {
 		}
 
 		_ = h.view.Render(w, "public", "storefront/checkout", map[string]any{
-			"Title":           "Checkout",
+			"Title":           "Checkout - " + product.Name,
 			"User":            user,
 			"Product":         product,
 			"Error":           errMsg,
 			"PaymentProvider": strings.ToUpper(h.paymentProvider),
+			"ClientKey":       h.clientKey,
+			"SnapScriptURL":   h.snapScriptURL,
+			"CouponCode":      couponCode,
+			"TotalAmount":     product.Price,
 		})
 		return
 	}
@@ -156,6 +298,31 @@ func (h *Handler) ProcessCheckout(w http.ResponseWriter, r *http.Request) {
 
 	// Normal browser submission fallback: redirect to external checkout page
 	http.Redirect(w, r, checkoutURL, http.StatusSeeOther)
+}
+
+func translateCouponError(err error) string {
+	if errors.Is(err, domain.ErrCouponNotFound) || errors.Is(err, domain.ErrNotFound) {
+		return "Kode kupon tidak ditemukan."
+	}
+	if errors.Is(err, domain.ErrCouponInactive) {
+		return "Kupon saat ini sedang tidak aktif."
+	}
+	if errors.Is(err, domain.ErrCouponExpired) {
+		return "Kupon telah kedaluwarsa."
+	}
+	if errors.Is(err, domain.ErrCouponNotStarted) {
+		return "Promo kupon belum dimulai."
+	}
+	if errors.Is(err, domain.ErrCouponLimitReached) {
+		return "Batas kuota pemakaian kupon telah tercapai."
+	}
+	if errors.Is(err, domain.ErrCouponMinPurchase) {
+		return "Total belanja belum memenuhi minimum pembelian untuk kupon ini."
+	}
+	if errors.Is(err, domain.ErrCouponInvalidCode) {
+		return "Format kode kupon tidak valid."
+	}
+	return "Kupon tidak dapat digunakan."
 }
 
 // OrderSuccess renders order summary and status details after checkout redirection.

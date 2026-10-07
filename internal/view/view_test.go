@@ -256,5 +256,79 @@ func TestRealAdminCouponsTemplates(t *testing.T) {
 	}
 }
 
+func TestRealStorefrontCheckoutTemplates(t *testing.T) {
+	v := view.New(templates.FS, false)
+
+	prod := &domain.Product{
+		ID:    1,
+		Name:  "Belajar Go Modern",
+		Price: 100000,
+		Slug:  "belajar-go-modern",
+	}
+
+	c := &domain.Coupon{
+		ID:            5,
+		Code:          "HEMAT20",
+		DiscountType:  domain.DiscountTypePercentage,
+		DiscountValue: 20,
+	}
+
+	// 1. Checkout page with coupon
+	recCheckout := httptest.NewRecorder()
+	err := v.Render(recCheckout, "public", "storefront/checkout", map[string]any{
+		"Title":           "Checkout - " + prod.Name,
+		"User":            &domain.User{Name: "Budi", Email: "budi@example.com"},
+		"Product":         prod,
+		"PaymentProvider": "MIDTRANS",
+		"ClientKey":       "test-client-key",
+		"SnapScriptURL":   "https://app.sandbox.midtrans.com/snap/snap.js",
+		"Coupon":          c,
+		"CouponCode":      "HEMAT20",
+		"DiscountAmount":  int64(20000),
+		"TotalAmount":     int64(80000),
+		"CouponSuccess":   "Kupon HEMAT20 berhasil diterapkan!",
+	})
+	if err != nil {
+		t.Fatalf("failed to render real storefront/checkout template: %v", err)
+	}
+	if recCheckout.Code != 200 {
+		t.Fatalf("expected status 200, got %d", recCheckout.Code)
+	}
+	body := recCheckout.Body.String()
+	if !strings.Contains(body, "HEMAT20") {
+		t.Errorf("expected rendered checkout to contain HEMAT20")
+	}
+	if !strings.Contains(body, "checkout-summary") {
+		t.Errorf("expected rendered checkout to contain checkout-summary ID")
+	}
+
+	// 2. Order success page with coupon
+	order := &domain.Order{
+		Reference:      "ORD-2026-TEST",
+		Status:         domain.StatusPaid,
+		TotalAmount:    80000,
+		DiscountAmount: 20000,
+		Coupon:         c,
+		PaymentProvider: "midtrans",
+		Items: []domain.OrderItem{
+			{ProductID: 1, ProductName: prod.Name, Price: 100000},
+		},
+	}
+	recSuccess := httptest.NewRecorder()
+	err = v.Render(recSuccess, "public", "storefront/order_success", map[string]any{
+		"Title": "Pembayaran Berhasil",
+		"Order": order,
+	})
+	if err != nil {
+		t.Fatalf("failed to render real storefront/order_success template: %v", err)
+	}
+	if recSuccess.Code != 200 {
+		t.Fatalf("expected status 200, got %d", recSuccess.Code)
+	}
+	if !strings.Contains(recSuccess.Body.String(), "Potongan Kupon") {
+		t.Errorf("expected rendered success to contain Potongan Kupon")
+	}
+}
+
 
 

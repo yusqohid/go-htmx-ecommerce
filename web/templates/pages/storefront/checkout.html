@@ -115,7 +115,13 @@
                        name="coupon_code" 
                        class="form-control text-uppercase font-monospace" 
                        placeholder="Masukkan kode promo (misal: HEMAT20)"
-                       value="{{ .CouponCode }}">
+                       value="{{ .CouponCode }}"
+                       hx-post="/checkout/{{ .Product.ID }}/apply-coupon"
+                       hx-trigger="keyup[key=='Enter']"
+                       hx-include="#coupon-code-input"
+                       hx-target="#checkout-summary"
+                       hx-select="#checkout-summary"
+                       hx-swap="outerHTML">
                 <button type="button" 
                         class="btn btn-primary px-3"
                         hx-post="/checkout/{{ .Product.ID }}/apply-coupon"
@@ -131,6 +137,13 @@
               {{ end }}
             {{ end }}
           </div>
+
+          <!-- Hidden coupon_code associated with #checkout-form (swapped via HTMX) -->
+          <input type="hidden" 
+                 id="checkout-coupon-code" 
+                 name="coupon_code" 
+                 form="checkout-form" 
+                 value="{{ if .Coupon }}{{ .Coupon.Code }}{{ else if .CouponCode }}{{ .CouponCode }}{{ end }}">
 
           <!-- Price Breakdown -->
           <div class="mb-4">
@@ -155,11 +168,6 @@
           <!-- Checkout Form Submit -->
           <form id="checkout-form" method="POST" action="/checkout/{{ .Product.ID }}">
             <input type="hidden" name="csrf_token" value="">
-            {{ if .Coupon }}
-              <input type="hidden" name="coupon_code" value="{{ .Coupon.Code }}">
-            {{ else if .CouponCode }}
-              <input type="hidden" name="coupon_code" value="{{ .CouponCode }}">
-            {{ end }}
             <button id="pay-button" type="submit" class="btn-spark-primary w-100 py-3 fw-bold mb-3 fs-6">
               <i class="bi bi-lock-fill me-1"></i> Lanjut ke Pembayaran
             </button>
@@ -198,13 +206,20 @@
 
       try {
         const csrfToken = (typeof getCSRFToken === "function") ? getCSRFToken() : "";
+        const formData = new FormData(form);
+        if (!formData.get("coupon_code")) {
+          const couponInp = document.getElementById("checkout-coupon-code");
+          if (couponInp && couponInp.value) {
+            formData.set("coupon_code", couponInp.value);
+          }
+        }
         const resp = await fetch(form.action, {
           method: "POST",
           headers: {
             "Accept": "application/json",
             "X-CSRF-Token": csrfToken
           },
-          body: new FormData(form)
+          body: formData
         });
 
         if (!resp.ok) {

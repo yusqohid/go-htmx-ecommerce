@@ -33,7 +33,7 @@ func setupOrderHandlerTest(t *testing.T) (*order.Service, *MockProductRepo, *Moc
 			Data: []byte(`<!DOCTYPE html><html><body>{{ template "content" . }}</body></html>`),
 		},
 		"pages/storefront/checkout.html": &fstest.MapFile{
-			Data: []byte(`{{ define "content" }}<h1>Checkout: {{ .Product.Name }}</h1>{{ if .Coupon }}<span>Coupon: {{ .Coupon.Code }}</span>{{ end }}{{ if .CouponError }}<span class="error">{{ .CouponError }}</span>{{ end }}<span class="total">{{ .TotalAmount }}</span>{{ end }}`),
+			Data: []byte(`{{ define "content" }}<h1>Checkout: {{ .Product.Name }}</h1><input type="hidden" id="checkout-coupon-code" name="coupon_code" form="checkout-form" value="{{ if .Coupon }}{{ .Coupon.Code }}{{ else if .CouponCode }}{{ .CouponCode }}{{ end }}">{{ if .Coupon }}<span>Coupon: {{ .Coupon.Code }}</span>{{ end }}{{ if .CouponError }}<span class="error">{{ .CouponError }}</span>{{ end }}<span class="total">{{ .TotalAmount }}</span>{{ end }}`),
 		},
 		"pages/storefront/order_success.html": &fstest.MapFile{
 			Data: []byte(`{{ define "content" }}<h1>Order: {{ .Order.Reference }}</h1>{{ end }}`),
@@ -63,7 +63,7 @@ func setupOrderHandlerCouponTest(t *testing.T) (*order.Service, *MockProductRepo
 			Data: []byte(`<!DOCTYPE html><html><body>{{ template "content" . }}</body></html>`),
 		},
 		"pages/storefront/checkout.html": &fstest.MapFile{
-			Data: []byte(`{{ define "content" }}<h1>Checkout: {{ .Product.Name }}</h1>{{ if .Coupon }}<span>Coupon: {{ .Coupon.Code }}</span>{{ end }}{{ if .CouponError }}<span class="error">{{ .CouponError }}</span>{{ end }}<span class="total">{{ .TotalAmount }}</span>{{ end }}`),
+			Data: []byte(`{{ define "content" }}<h1>Checkout: {{ .Product.Name }}</h1><input type="hidden" id="checkout-coupon-code" name="coupon_code" form="checkout-form" value="{{ if .Coupon }}{{ .Coupon.Code }}{{ else if .CouponCode }}{{ .CouponCode }}{{ end }}">{{ if .Coupon }}<span>Coupon: {{ .Coupon.Code }}</span>{{ end }}{{ if .CouponError }}<span class="error">{{ .CouponError }}</span>{{ end }}<span class="total">{{ .TotalAmount }}</span>{{ end }}`),
 		},
 		"pages/storefront/order_success.html": &fstest.MapFile{
 			Data: []byte(`{{ define "content" }}<h1>Order: {{ .Order.Reference }}</h1>{{ end }}`),
@@ -379,6 +379,12 @@ func TestApplyCoupon_Success(t *testing.T) {
 	body := rec.Body.String()
 	if !strings.Contains(body, "DISKON20") {
 		t.Errorf("expected rendered response to contain coupon code DISKON20, got: %s", body)
+	}
+	if !strings.Contains(body, `form="checkout-form"`) {
+		t.Errorf("expected rendered response to associate coupon input with form='checkout-form'")
+	}
+	if !strings.Contains(body, `value="DISKON20"`) {
+		t.Errorf("expected rendered response to set coupon input value to DISKON20")
 	}
 	if !strings.Contains(body, "80000") {
 		t.Errorf("expected rendered total to be 80000, got: %s", body)

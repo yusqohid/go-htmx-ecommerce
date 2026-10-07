@@ -301,6 +301,12 @@ func TestRealStorefrontCheckoutTemplates(t *testing.T) {
 	if !strings.Contains(body, "checkout-summary") {
 		t.Errorf("expected rendered checkout to contain checkout-summary ID")
 	}
+	if !strings.Contains(body, `id="checkout-coupon-code"`) || !strings.Contains(body, `form="checkout-form"`) {
+		t.Errorf("expected checkout-coupon-code input with form='checkout-form' attribute")
+	}
+	if !strings.Contains(body, `value="HEMAT20"`) {
+		t.Errorf("expected checkout-coupon-code input to have value='HEMAT20'")
+	}
 
 	// 2. Order success page with coupon
 	order := &domain.Order{

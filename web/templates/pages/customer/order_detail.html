@@ -98,6 +98,16 @@
                 {{ end }}
               </tbody>
               <tfoot class="border-top">
+                {{ if gt .Order.DiscountAmount 0 }}
+                  <tr>
+                    <td class="text-end text-muted small">Subtotal:</td>
+                    <td class="text-end fw-medium text-dark">{{ formatMoney .Order.Subtotal }}</td>
+                  </tr>
+                  <tr>
+                    <td class="text-end text-success small">Potongan Kupon{{ if .Order.Coupon }} ({{ .Order.Coupon.Code }}){{ end }}:</td>
+                    <td class="text-end fw-bold text-success">- {{ formatMoney .Order.DiscountAmount }}</td>
+                  </tr>
+                {{ end }}
                 <tr>
                   <th class="text-end">Total:</th>
                   <th class="text-end text-dark fs-5 product-price">{{ formatMoney .Order.TotalAmount }}</th>

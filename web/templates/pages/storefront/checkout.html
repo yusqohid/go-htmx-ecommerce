@@ -40,7 +40,7 @@
           </div>
         {{ end }}
 
-        <div class="spark-card mb-4">
+        <div id="checkout-summary" class="spark-card mb-4">
           <h3 class="h4 fw-bold mb-1">Ringkasan Pesanan</h3>
           <p class="text-muted small mb-4">Periksa rincian pembelian Anda sebelum melanjutkan ke pembayaran.</p>
 
@@ -76,10 +76,93 @@
             </div>
           </div>
 
-          <!-- Total Due -->
-          <div class="d-flex justify-content-between align-items-baseline mb-4">
-            <span class="fs-5 fw-bold text-dark">Total Pembayaran</span>
-            <span class="fs-2 fw-bold text-dark product-price">{{ formatMoney .Product.Price }}</span>
+          <!-- Coupon Promotion Box (HTMX) -->
+          <div class="p-3 bg-light rounded-3 mb-4 border">
+            <label class="form-label fw-bold small text-dark mb-1 d-flex align-items-center gap-1.5">
+              <i class="bi bi-ticket-perforated text-primary"></i> Kode Promo / Kupon Diskon
+            </label>
+            {{ if .Coupon }}
+              <div class="d-flex align-items-center justify-content-between bg-white p-2.5 rounded-2 border border-success">
+                <div class="d-flex align-items-center gap-2">
+                  <span class="badge bg-success text-white px-2.5 py-1 fw-bold font-monospace">
+                    <i class="bi bi-check-circle-fill me-1"></i>{{ .Coupon.Code }}
+                  </span>
+                  <span class="text-success small fw-semibold">
+                    {{ if eq .Coupon.DiscountType "percentage" }}
+                      Diskon {{ .Coupon.DiscountValue }}%
+                    {{ else }}
+                      Diskon {{ formatMoney .Coupon.DiscountValue }}
+                    {{ end }}
+                  </span>
+                </div>
+                <button type="button" 
+                        class="btn btn-sm btn-outline-danger py-0 px-2 rounded-pill"
+                        hx-post="/checkout/{{ .Product.ID }}/remove-coupon"
+                        hx-target="#checkout-summary"
+                        hx-select="#checkout-summary"
+                        hx-swap="outerHTML"
+                        title="Hapus Kupon">
+                  <i class="bi bi-x-lg me-1"></i>Hapus
+                </button>
+              </div>
+              {{ if .CouponSuccess }}
+                <div class="text-success small mt-2"><i class="bi bi-check-circle me-1"></i>{{ .CouponSuccess }}</div>
+              {{ end }}
+            {{ else }}
+              <div class="input-group">
+                <input type="text" 
+                       id="coupon-code-input"
+                       name="coupon_code" 
+                       class="form-control text-uppercase font-monospace" 
+                       placeholder="Masukkan kode promo (misal: HEMAT20)"
+                       value="{{ .CouponCode }}"
+                       hx-post="/checkout/{{ .Product.ID }}/apply-coupon"
+                       hx-trigger="keyup[key=='Enter']"
+                       hx-include="#coupon-code-input"
+                       hx-target="#checkout-summary"
+                       hx-select="#checkout-summary"
+                       hx-swap="outerHTML">
+                <button type="button" 
+                        class="btn btn-primary px-3"
+                        hx-post="/checkout/{{ .Product.ID }}/apply-coupon"
+                        hx-include="#coupon-code-input"
+                        hx-target="#checkout-summary"
+                        hx-select="#checkout-summary"
+                        hx-swap="outerHTML">
+                  Terapkan
+                </button>
+              </div>
+              {{ if .CouponError }}
+                <div class="text-danger small mt-2"><i class="bi bi-exclamation-circle me-1"></i>{{ .CouponError }}</div>
+              {{ end }}
+            {{ end }}
+          </div>
+
+          <!-- Hidden coupon_code associated with #checkout-form (swapped via HTMX) -->
+          <input type="hidden" 
+                 id="checkout-coupon-code" 
+                 name="coupon_code" 
+                 form="checkout-form" 
+                 value="{{ if .Coupon }}{{ .Coupon.Code }}{{ else if .CouponCode }}{{ .CouponCode }}{{ end }}">
+
+          <!-- Price Breakdown -->
+          <div class="mb-4">
+            <div class="d-flex justify-content-between text-muted small mb-2">
+              <span>Subtotal:</span>
+              <span class="fw-semibold text-dark">{{ formatMoney .Product.Price }}</span>
+            </div>
+            {{ if gt .DiscountAmount 0 }}
+              <div class="d-flex justify-content-between text-success small mb-2">
+                <span>Potongan Kupon{{ if .Coupon }} ({{ .Coupon.Code }}){{ end }}:</span>
+                <span class="fw-bold">- {{ formatMoney .DiscountAmount }}</span>
+              </div>
+            {{ end }}
+            <div class="d-flex justify-content-between align-items-baseline pt-2 border-top">
+              <span class="fs-5 fw-bold text-dark">Total Pembayaran</span>
+              <span class="fs-2 fw-bold text-dark product-price">
+                {{ formatMoney .TotalAmount }}
+              </span>
+            </div>
           </div>
 
           <!-- Checkout Form Submit -->
@@ -110,30 +193,38 @@
 {{ if and (eq .PaymentProvider "MIDTRANS") .ClientKey }}
 <script src="{{ .SnapScriptURL }}" data-client-key="{{ .ClientKey }}"></script>
 <script>
-  document.addEventListener("DOMContentLoaded", function() {
-    const form = document.getElementById("checkout-form");
-    const payBtn = document.getElementById("pay-button");
-    if (!form || !payBtn) return;
+  document.addEventListener("submit", async function(e) {
+    const form = e.target.closest("#checkout-form");
+    if (!form) return;
+    const payBtn = form.querySelector("#pay-button");
+    if (!payBtn) return;
 
-    form.addEventListener("submit", async function(e) {
-      if (window.snap && typeof window.snap.pay === "function") {
-        e.preventDefault();
-        payBtn.disabled = true;
-        payBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Menghubungi Midtrans...';
+    if (window.snap && typeof window.snap.pay === "function") {
+      e.preventDefault();
+      payBtn.disabled = true;
+      payBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Menghubungi Midtrans...';
 
-        try {
-          const csrfToken = (typeof getCSRFToken === "function") ? getCSRFToken() : "";
-          const resp = await fetch(form.action, {
-            method: "POST",
-            headers: {
-              "Accept": "application/json",
-              "X-CSRF-Token": csrfToken
-            }
-          });
-
-          if (!resp.ok) {
-            throw new Error("Checkout gagal dengan status " + resp.status);
+      try {
+        const csrfToken = (typeof getCSRFToken === "function") ? getCSRFToken() : "";
+        const formData = new FormData(form);
+        if (!formData.get("coupon_code")) {
+          const couponInp = document.getElementById("checkout-coupon-code");
+          if (couponInp && couponInp.value) {
+            formData.set("coupon_code", couponInp.value);
           }
+        }
+        const resp = await fetch(form.action, {
+          method: "POST",
+          headers: {
+            "Accept": "application/json",
+            "X-CSRF-Token": csrfToken
+          },
+          body: formData
+        });
+
+        if (!resp.ok) {
+          throw new Error("Checkout gagal dengan status " + resp.status);
+        }
 
           const data = await resp.json();
           if (data.snap_token) {

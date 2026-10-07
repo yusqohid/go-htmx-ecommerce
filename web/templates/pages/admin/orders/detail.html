@@ -99,6 +99,16 @@
             {{ end }}
           </tbody>
           <tfoot>
+            {{ if gt .Order.DiscountAmount 0 }}
+              <tr>
+                <td colspan="2" class="text-end text-muted small">Subtotal:</td>
+                <td class="text-end fw-medium text-dark">{{ formatMoney .Order.Subtotal }}</td>
+              </tr>
+              <tr>
+                <td colspan="2" class="text-end text-success small">Discount{{ if .Order.Coupon }} ({{ .Order.Coupon.Code }}){{ end }}:</td>
+                <td class="text-end fw-bold text-success">- {{ formatMoney .Order.DiscountAmount }}</td>
+              </tr>
+            {{ end }}
             <tr>
               <th colspan="2" class="text-end">Order Total:</th>
               <th class="text-end text-success fs-5">{{ formatMoney .Order.TotalAmount }}</th>

@@ -128,6 +128,8 @@ func NewRouter(deps RouterDeps) http.Handler {
 			authRouter.Use(auth.RequireAuth("/login"))
 			authRouter.Get("/checkout/{productID}", deps.OrderHandler.CheckoutPage)
 			authRouter.Post("/checkout/{productID}", deps.OrderHandler.ProcessCheckout)
+			authRouter.Post("/checkout/{productID}/apply-coupon", deps.OrderHandler.ApplyCoupon)
+			authRouter.Post("/checkout/{productID}/remove-coupon", deps.OrderHandler.RemoveCoupon)
 		})
 
 		r.Get("/orders/{reference}/success", deps.OrderHandler.OrderSuccess)

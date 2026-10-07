@@ -55,6 +55,16 @@
             <span>Penyedia Pembayaran:</span>
             <span class="text-dark text-uppercase font-monospace small">{{ .Order.PaymentProvider }}</span>
           </div>
+          {{ if gt .Order.DiscountAmount 0 }}
+            <div class="d-flex justify-content-between mb-2 small text-muted">
+              <span>Subtotal:</span>
+              <span class="text-dark">{{ formatMoney .Order.Subtotal }}</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2 small text-success">
+              <span>Potongan Kupon{{ if .Order.Coupon }} ({{ .Order.Coupon.Code }}){{ end }}:</span>
+              <strong>- {{ formatMoney .Order.DiscountAmount }}</strong>
+            </div>
+          {{ end }}
           <div class="border-top pt-2 mt-2 d-flex justify-content-between align-items-center">
             <strong class="text-dark">{{ if eq .Order.Status "paid" }}Total Dibayar:{{ else }}Total Tagihan:{{ end }}</strong>
             <strong class="text-dark fs-5 product-price">{{ formatMoney .Order.TotalAmount }}</strong>

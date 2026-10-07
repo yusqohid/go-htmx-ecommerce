@@ -79,6 +79,49 @@ func TestMidtransProvider_CreateCheckout_Success(t *testing.T) {
 	}
 }
 
+func TestMidtransProvider_CreateCheckout_WithDiscount(t *testing.T) {
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var payload map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&payload)
+
+		items, _ := payload["item_details"].([]any)
+		if len(items) != 2 {
+			t.Errorf("expected 2 items (product + discount), got %d", len(items))
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"token":        "snap-token-disc",
+			"redirect_url": "https://app.sandbox.midtrans.com/snap/v2/vtweb/snap-token-disc",
+		})
+	}))
+	defer mockServer.Close()
+
+	p := payment.NewMidtransProvider("test-server-key", "test-client-key", mockServer.URL, "http://localhost:8080", false)
+
+	order := &domain.Order{
+		Reference:      "ORD-DISC-01",
+		TotalAmount:    80000,
+		DiscountAmount: 20000,
+		Customer: &domain.User{
+			Name:  "Budi Santoso",
+			Email: "budi@example.com",
+		},
+		Items: []domain.OrderItem{
+			{ProductID: 1, ProductName: "E-Book Go", Price: 100000},
+		},
+	}
+
+	checkoutURL, err := p.CreateCheckout(context.Background(), order)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if checkoutURL != "https://app.sandbox.midtrans.com/snap/v2/vtweb/snap-token-disc" {
+		t.Errorf("unexpected checkout URL: %s", checkoutURL)
+	}
+}
+
 func TestMidtransProvider_CreateCheckout_ErrorResponse(t *testing.T) {
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

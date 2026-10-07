@@ -129,6 +129,14 @@ func (p *MidtransProvider) CreateCheckout(ctx context.Context, order *domain.Ord
 			Name:     item.ProductName,
 		})
 	}
+	if order.DiscountAmount > 0 {
+		items = append(items, midtransItemDetail{
+			ID:       "DISCOUNT",
+			Price:    -order.DiscountAmount,
+			Quantity: 1,
+			Name:     "Diskon Kupon",
+		})
+	}
 
 	payload := midtransSnapRequest{
 		TransactionDetails: midtransTransactionDetails{

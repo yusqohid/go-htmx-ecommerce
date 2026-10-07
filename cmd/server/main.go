@@ -128,7 +128,7 @@ func main() {
 		if cfg.MidtransIsProduction {
 			snapScriptURL = "https://app.midtrans.com/snap/snap.js"
 		}
-		orderHandler = order.NewHandler(orderService, productRepo, viewRenderer, paymentProvider.Name(), cfg.MidtransClientKey, snapScriptURL)
+		orderHandler = order.NewHandler(orderService, productRepo, couponService, viewRenderer, paymentProvider.Name(), cfg.MidtransClientKey, snapScriptURL)
 
 		paymentService := payment.NewService(paymentProvider, paymentEventRepo, orderService)
 		paymentHandler = payment.NewHandler(paymentService)

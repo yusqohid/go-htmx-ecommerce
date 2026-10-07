@@ -7,3 +7,6 @@ bin/
 tmp/
 /storage/
 spark-admin-1.0.0/
+.omp/
+scratch/
+learn/

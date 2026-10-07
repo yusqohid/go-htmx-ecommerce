@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/yusqohid/go-htmx-ecommerce/internal/domain"
@@ -28,6 +29,7 @@ type EmailNotifier interface {
 type Service struct {
 	orderRepo       domain.OrderRepository
 	productRepo     domain.ProductRepository
+	couponRepo      domain.CouponRepository
 	paymentProvider domain.PaymentProvider
 	emailNotifier   EmailNotifier
 }
@@ -36,12 +38,14 @@ type Service struct {
 func NewService(
 	orderRepo domain.OrderRepository,
 	productRepo domain.ProductRepository,
+	couponRepo domain.CouponRepository,
 	paymentProvider domain.PaymentProvider,
 	emailNotifier EmailNotifier,
 ) *Service {
 	return &Service{
 		orderRepo:       orderRepo,
 		productRepo:     productRepo,
+		couponRepo:      couponRepo,
 		paymentProvider: paymentProvider,
 		emailNotifier:   emailNotifier,
 	}
@@ -49,8 +53,9 @@ func NewService(
 
 // CreateOrderInput holds the parameters required to place an order.
 type CreateOrderInput struct {
-	Customer  *domain.User
-	ProductID int64
+	Customer   *domain.User
+	ProductID  int64
+	CouponCode string
 }
 
 // CreateOrder places a new pending order and initiates a payment checkout session.
@@ -84,13 +89,42 @@ func (s *Service) CreateOrder(ctx context.Context, input CreateOrderInput) (*dom
 	// 3. Generate unique order reference: ORD-<YYYYMMDD>-<HEX>
 	ref := GenerateOrderReference()
 
-	// 4. Construct order with item snapshot (preserving historical price)
+	// 4. Validate coupon and calculate discount if coupon code is provided
+	var couponID *int64
+	var discountAmount int64
+
+	if s.couponRepo != nil && strings.TrimSpace(input.CouponCode) != "" {
+		code := domain.NormalizeCouponCode(input.CouponCode)
+		coupon, err := s.couponRepo.FindByCode(ctx, code)
+		if err != nil {
+			if errors.Is(err, domain.ErrNotFound) {
+				return nil, "", domain.ErrCouponNotFound
+			}
+			return nil, "", fmt.Errorf("failed to lookup coupon: %w", err)
+		}
+
+		if err := coupon.Validate(time.Now().UTC(), product.Price); err != nil {
+			return nil, "", err
+		}
+
+		discountAmount = coupon.CalculateDiscount(product.Price)
+		couponID = &coupon.ID
+	}
+
+	totalAmount := product.Price - discountAmount
+	if totalAmount < 0 {
+		totalAmount = 0
+	}
+
+	// 5. Construct order with item snapshot (preserving historical price)
 	order := &domain.Order{
 		Reference:       ref,
 		CustomerID:      input.Customer.ID,
 		Customer:        input.Customer,
 		Status:          domain.StatusPending,
-		TotalAmount:     product.Price,
+		TotalAmount:     totalAmount,
+		DiscountAmount:  discountAmount,
+		CouponID:        couponID,
 		Currency:        "IDR",
 		PaymentProvider: s.paymentProvider.Name(),
 		Items: []domain.OrderItem{
@@ -102,7 +136,7 @@ func (s *Service) CreateOrder(ctx context.Context, input CreateOrderInput) (*dom
 		},
 	}
 
-	// 5. Persist order atomically in database
+	// 6. Persist order atomically in database
 	if err := s.orderRepo.Create(ctx, order); err != nil {
 		return nil, "", fmt.Errorf("failed to save order: %w", err)
 	}
@@ -181,7 +215,7 @@ func (s *Service) UpdateOrderStatus(ctx context.Context, id int64, status domain
 	}
 
 	if status == domain.StatusPaid {
-		s.notifyOrderPaid(id)
+		s.handleOrderPaid(id)
 	}
 
 	return nil
@@ -189,12 +223,19 @@ func (s *Service) UpdateOrderStatus(ctx context.Context, id int64, status domain
 
 // ProcessPaymentResult atomically updates order status and records the payment event.
 func (s *Service) ProcessPaymentResult(ctx context.Context, orderID int64, status domain.OrderStatus, paymentRef string, event *domain.PaymentEvent) error {
+	order, err := s.orderRepo.FindByID(ctx, orderID)
+	if err != nil {
+		return err
+	}
+
+	wasAlreadyPaid := order.Status == domain.StatusPaid
+
 	if err := s.orderRepo.ProcessPaymentResult(ctx, orderID, status, paymentRef, event); err != nil {
 		return err
 	}
 
-	if status == domain.StatusPaid {
-		s.notifyOrderPaid(orderID)
+	if status == domain.StatusPaid && !wasAlreadyPaid {
+		s.handleOrderPaid(orderID)
 	}
 
 	return nil
@@ -235,10 +276,30 @@ func (s *Service) SyncPaymentStatus(ctx context.Context, orderReference string) 
 	}
 
 	if event.Status == domain.StatusPaid {
-		s.notifyOrderPaid(ord.ID)
+		s.handleOrderPaid(ord.ID)
 	}
 
 	return s.orderRepo.FindByReference(ctx, orderReference)
+}
+
+func (s *Service) handleOrderPaid(orderID int64) {
+	s.notifyOrderPaid(orderID)
+
+	if s.couponRepo != nil {
+		go func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+			defer cancel()
+
+			order, err := s.orderRepo.FindByID(ctx, orderID)
+			if err != nil || order == nil || order.CouponID == nil {
+				return
+			}
+
+			if err := s.couponRepo.IncrementUsedCount(ctx, *order.CouponID); err != nil {
+				log.Printf("[OrderService] Failed to increment coupon %d usage: %v", *order.CouponID, err)
+			}
+		}()
+	}
 }
 
 func (s *Service) notifyOrderPaid(orderID int64) {

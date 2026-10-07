@@ -23,7 +23,10 @@ type Order struct {
 	CustomerID       int64       `json:"customer_id"`
 	Customer         *User       `json:"customer,omitempty"`
 	Status           OrderStatus `json:"status"`
-	TotalAmount      int64       `json:"total_amount"`
+	TotalAmount      int64       `json:"total_amount"` // final payable amount after discount
+	DiscountAmount   int64       `json:"discount_amount"` // discount applied
+	CouponID         *int64      `json:"coupon_id,omitempty"`
+	Coupon           *Coupon     `json:"coupon,omitempty"`
 	Currency         string      `json:"currency"`
 	PaymentProvider  string      `json:"payment_provider"`
 	PaymentReference string      `json:"payment_reference"`
@@ -35,6 +38,15 @@ type Order struct {
 // IsPaid checks if the order has been successfully paid for.
 func (o *Order) IsPaid() bool {
 	return o.Status == StatusPaid
+}
+
+// Subtotal calculates the sum of all item prices before discounts.
+func (o *Order) Subtotal() int64 {
+	var sum int64
+	for _, it := range o.Items {
+		sum += it.Price
+	}
+	return sum
 }
 
 // OrderItem represents a line item within an order, capturing snapshot prices.

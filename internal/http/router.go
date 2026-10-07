@@ -11,6 +11,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/yusqohid/go-htmx-ecommerce/internal/auth"
 	"github.com/yusqohid/go-htmx-ecommerce/internal/config"
+	"github.com/yusqohid/go-htmx-ecommerce/internal/coupon"
 	"github.com/yusqohid/go-htmx-ecommerce/internal/customer"
 	"github.com/yusqohid/go-htmx-ecommerce/internal/database"
 	"github.com/yusqohid/go-htmx-ecommerce/internal/domain"
@@ -33,6 +34,7 @@ type RouterDeps struct {
 	DownloadHandler   *product.DownloadHandler
 	CustomerHandler   *customer.Handler
 	AdminOrderHandler *order.AdminHandler
+	CouponHandler     *coupon.Handler
 	Logger            *slog.Logger
 }
 // NewRouter sets up the Chi HTTP router with base middlewares, static files, auth, and routes.
@@ -183,6 +185,17 @@ func NewRouter(deps RouterDeps) http.Handler {
 			if deps.AdminOrderHandler != nil {
 				admin.Get("/admin/orders", deps.AdminOrderHandler.ListOrders)
 				admin.Get("/admin/orders/{id}", deps.AdminOrderHandler.OrderDetail)
+			}
+
+			// Admin Coupons & Promotions Management
+			if deps.CouponHandler != nil {
+				admin.Get("/admin/coupons", deps.CouponHandler.ListCoupons)
+				admin.Get("/admin/coupons/new", deps.CouponHandler.NewCoupon)
+				admin.Post("/admin/coupons", deps.CouponHandler.CreateCoupon)
+				admin.Get("/admin/coupons/{id}/edit", deps.CouponHandler.EditCoupon)
+				admin.Post("/admin/coupons/{id}", deps.CouponHandler.UpdateCoupon)
+				admin.Post("/admin/coupons/{id}/toggle-status", deps.CouponHandler.ToggleStatus)
+				admin.Post("/admin/coupons/{id}/delete", deps.CouponHandler.DeleteCoupon)
 			}
 		})
 	}

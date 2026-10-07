@@ -1,0 +1,195 @@
+{{ define "content" }}
+<!-- START: Page Header Banner -->
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ if .IsEdit }}Edit Coupon{{ else }}Create New Coupon{{ end }}</h1>
+    <p class="page-subtitle">Configure promotion parameters, discount value, and redemption limits.</p>
+  </div>
+  <a href="/admin/coupons" class="btn-custom btn-custom-secondary btn-custom-sm text-decoration-none">
+    <i class="bi bi-arrow-left me-1"></i> Back to Coupons
+  </a>
+</div>
+<!-- END: Page Header Banner -->
+
+{{ if .Error }}
+<div class="alert-custom alert-custom-danger mb-4">
+  <i class="bi bi-exclamation-triangle-fill alert-custom-icon"></i>
+  <div class="alert-custom-content">{{ .Error }}</div>
+</div>
+{{ end }}
+
+<div class="row g-4 mb-4">
+  <div class="col-12 col-lg-8">
+    <div class="card border-light shadow-sm p-4 h-100">
+      <h5 class="card-title mb-4">Coupon Configuration</h5>
+
+      <form method="POST" action="{{ if .IsEdit }}/admin/coupons/{{ .Coupon.ID }}{{ else }}/admin/coupons{{ end }}">
+        <input type="hidden" name="csrf_token" value="">
+
+        <!-- Coupon Code -->
+        <div class="mb-3">
+          <label for="code" class="form-label-custom">Coupon Code <span class="text-danger">*</span></label>
+          <input 
+            type="text" 
+            class="form-control-custom text-uppercase font-monospace fw-bold" 
+            id="code" 
+            name="code" 
+            value="{{ .Coupon.Code }}" 
+            required 
+            placeholder="e.g. DISKON20, FLASH50, MERDEKA"
+          >
+          <small class="text-muted d-block mt-1">Codes will automatically be normalized to uppercase.</small>
+        </div>
+
+        <!-- Discount Type & Value Row -->
+        <div class="row g-3 mb-3">
+          <div class="col-12 col-md-6">
+            <label for="discount_type" class="form-label-custom">Discount Type <span class="text-danger">*</span></label>
+            <select class="form-select-custom" id="discount_type" name="discount_type" required>
+              <option value="percentage" {{ if eq .Coupon.DiscountType "percentage" }}selected{{ end }}>Percentage (%)</option>
+              <option value="fixed" {{ if eq .Coupon.DiscountType "fixed" }}selected{{ end }}>Fixed Amount (IDR)</option>
+            </select>
+            <small class="text-muted d-block mt-1">Choose between relative percent or direct nominal deduction.</small>
+          </div>
+          <div class="col-12 col-md-6">
+            <label for="discount_value" class="form-label-custom">Discount Value <span class="text-danger">*</span></label>
+            <input 
+              type="number" 
+              class="form-control-custom" 
+              id="discount_value" 
+              name="discount_value" 
+              value="{{ .Coupon.DiscountValue }}" 
+              required 
+              min="1"
+              placeholder="e.g. 20 (for 20%) or 25000"
+            >
+            <small class="text-muted d-block mt-1">Enter percent (1-100) or nominal amount in Rupiah.</small>
+          </div>
+        </div>
+
+        <!-- Minimum Purchase & Maximum Cap Row -->
+        <div class="row g-3 mb-3">
+          <div class="col-12 col-md-6">
+            <label for="min_purchase_amount" class="form-label-custom">Minimum Purchase (IDR)</label>
+            <input 
+              type="number" 
+              class="form-control-custom" 
+              id="min_purchase_amount" 
+              name="min_purchase_amount" 
+              value="{{ .Coupon.MinPurchaseAmount }}" 
+              min="0"
+              placeholder="0 (no minimum requirement)"
+            >
+            <small class="text-muted d-block mt-1">Minimum order total required for coupon to apply.</small>
+          </div>
+          <div class="col-12 col-md-6">
+            <label for="max_discount_amount" class="form-label-custom">Maximum Discount Cap (IDR) <span class="text-muted fw-normal">(Optional)</span></label>
+            <input 
+              type="number" 
+              class="form-control-custom" 
+              id="max_discount_amount" 
+              name="max_discount_amount" 
+              value="{{ if .Coupon.MaxDiscountAmount }}{{ derefInt64 .Coupon.MaxDiscountAmount }}{{ end }}" 
+              min="1"
+              placeholder="Optional maximum limit (percentage only)"
+            >
+            <small class="text-muted d-block mt-1">Caps the maximum discount in IDR for percentage discounts.</small>
+          </div>
+        </div>
+
+        <!-- Usage Limit -->
+        <div class="mb-3">
+          <label for="usage_limit" class="form-label-custom">Usage Limit <span class="text-muted fw-normal">(Optional)</span></label>
+          <input 
+            type="number" 
+            class="form-control-custom" 
+            id="usage_limit" 
+            name="usage_limit" 
+            value="{{ if .Coupon.UsageLimit }}{{ derefInt .Coupon.UsageLimit }}{{ end }}" 
+            min="1"
+            placeholder="Leave blank for unlimited redemptions"
+          >
+          <small class="text-muted d-block mt-1">Maximum number of times this coupon can be redeemed across all customers.</small>
+        </div>
+
+        <!-- Validity Dates Row -->
+        <div class="row g-3 mb-4">
+          <div class="col-12 col-md-6">
+            <label for="starts_at" class="form-label-custom">Starts At <span class="text-muted fw-normal">(Optional)</span></label>
+            <input 
+              type="datetime-local" 
+              class="form-control-custom" 
+              id="starts_at" 
+              name="starts_at" 
+              value="{{ formatDateTimeInput .Coupon.StartsAt }}"
+            >
+            <small class="text-muted d-block mt-1">Coupon will only be valid after this date.</small>
+          </div>
+          <div class="col-12 col-md-6">
+            <label for="expires_at" class="form-label-custom">Expires At <span class="text-muted fw-normal">(Optional)</span></label>
+            <input 
+              type="datetime-local" 
+              class="form-control-custom" 
+              id="expires_at" 
+              name="expires_at" 
+              value="{{ formatDateTimeInput .Coupon.ExpiresAt }}"
+            >
+            <small class="text-muted d-block mt-1">Coupon will automatically expire after this date.</small>
+          </div>
+        </div>
+
+        <!-- Active Status Checkbox -->
+        <div class="mb-4">
+          <div class="form-check form-switch">
+            <input 
+              class="form-check-input" 
+              type="checkbox" 
+              role="switch" 
+              id="is_active" 
+              name="is_active" 
+              {{ if .Coupon.IsActive }}checked{{ end }}
+            >
+            <label class="form-check-label fw-semibold text-dark" for="is_active">
+              Active for Customer Redemption
+            </label>
+          </div>
+          <small class="text-muted d-block mt-1">Inactive coupons cannot be applied during customer checkout.</small>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="d-flex align-items-center gap-2 pt-3 border-top">
+          <button type="submit" class="btn-custom btn-custom-primary">
+            <i class="bi bi-check-lg me-1"></i> {{ if .IsEdit }}Save Changes{{ else }}Create Coupon{{ end }}
+          </button>
+          <a href="/admin/coupons" class="btn-custom btn-custom-secondary text-decoration-none">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Right Sidebar Info Card -->
+  <div class="col-12 col-lg-4">
+    <div class="card border-light shadow-sm p-4 mb-4">
+      <h6 class="fw-bold mb-3"><i class="bi bi-info-circle text-primary me-2"></i>Promotion Best Practices</h6>
+      <ul class="list-unstyled small text-secondary d-flex flex-column gap-2.5 mb-0">
+        <li class="d-flex align-items-start gap-2">
+          <i class="bi bi-check2 text-success mt-0.5"></i>
+          <span>Use memorable uppercase codes like <code>LAUNCH30</code> or <code>PROMO10</code>.</span>
+        </li>
+        <li class="d-flex align-items-start gap-2">
+          <i class="bi bi-check2 text-success mt-0.5"></i>
+          <span>Set a <strong>Maximum Discount Cap</strong> when offering high percentages (e.g. 50%) to protect profit margins.</span>
+        </li>
+        <li class="d-flex align-items-start gap-2">
+          <i class="bi bi-check2 text-success mt-0.5"></i>
+          <span>Use <strong>Usage Limits</strong> to create scarcity and urgency for flash sales.</span>
+        </li>
+        <li class="d-flex align-items-start gap-2">
+          <i class="bi bi-check2 text-success mt-0.5"></i>
+          <span>Discounts never exceed the product price (orders will not be negative).</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>
+{{ end }}

@@ -53,6 +53,25 @@ func TestFuncMap(t *testing.T) {
 	if got := sub(5, 2); got != 3 {
 		t.Errorf("sub(5, 2) = %d, want 3", got)
 	}
+
+	// deref tests
+	derefInt := funcs["derefInt"].(func(*int) int)
+	valInt := 42
+	if derefInt(nil) != 0 || derefInt(&valInt) != 42 {
+		t.Errorf("derefInt failed")
+	}
+
+	derefInt64 := funcs["derefInt64"].(func(*int64) int64)
+	valInt64 := int64(100)
+	if derefInt64(nil) != 0 || derefInt64(&valInt64) != 100 {
+		t.Errorf("derefInt64 failed")
+	}
+
+	derefTime := funcs["derefTime"].(func(*time.Time) time.Time)
+	now := time.Now()
+	if !derefTime(nil).IsZero() || derefTime(&now) != now {
+		t.Errorf("derefTime failed")
+	}
 }
 
 func TestViewRender(t *testing.T) {
@@ -173,5 +192,69 @@ func TestRealAdminProductImagesTemplate(t *testing.T) {
 		t.Fatalf("expected status 200, got %d", rec.Code)
 	}
 }
+
+func TestRealAdminCouponsTemplates(t *testing.T) {
+	v := view.New(templates.FS, false)
+
+	limit := 100
+	capAmount := int64(25000)
+	now := time.Now().UTC()
+	future := now.Add(48 * time.Hour)
+
+	couponList := []domain.Coupon{
+		{
+			ID:                1,
+			Code:              "DISKON20",
+			DiscountType:      domain.DiscountTypePercentage,
+			DiscountValue:     20,
+			MinPurchaseAmount: 50000,
+			MaxDiscountAmount: &capAmount,
+			UsageLimit:        &limit,
+			UsedCount:         12,
+			IsActive:          true,
+			StartsAt:          &now,
+			ExpiresAt:         &future,
+		},
+	}
+
+	// 1. Render index
+	recIndex := httptest.NewRecorder()
+	err := v.Render(recIndex, "admin", "admin/coupons/index", map[string]any{
+		"Title":     "Coupons & Discounts",
+		"ActiveNav": "coupons",
+		"Coupons":   couponList,
+		"Total":     1,
+		"Page":      1,
+	})
+	if err != nil {
+		t.Fatalf("failed to render real admin/coupons/index template: %v", err)
+	}
+	if recIndex.Code != 200 {
+		t.Fatalf("expected status 200, got %d", recIndex.Code)
+	}
+	if !strings.Contains(recIndex.Body.String(), "DISKON20") {
+		t.Errorf("expected rendered index to contain DISKON20")
+	}
+
+	// 2. Render form (edit mode)
+	recForm := httptest.NewRecorder()
+	err = v.Render(recForm, "admin", "admin/coupons/form", map[string]any{
+		"Title":     "Edit Coupon - DISKON20",
+		"ActiveNav": "coupons",
+		"IsEdit":    true,
+		"Coupon":    &couponList[0],
+		"Error":     "",
+	})
+	if err != nil {
+		t.Fatalf("failed to render real admin/coupons/form template: %v", err)
+	}
+	if recForm.Code != 200 {
+		t.Fatalf("expected status 200, got %d", recForm.Code)
+	}
+	if !strings.Contains(recForm.Body.String(), "DISKON20") {
+		t.Errorf("expected rendered form to contain DISKON20")
+	}
+}
+
 
 

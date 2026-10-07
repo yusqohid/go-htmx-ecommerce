@@ -32,8 +32,12 @@ func (r *PostgresOrderRepository) Create(ctx context.Context, o *domain.Order) e
 
 	now := time.Now().UTC()
 	queryOrder := `
-		INSERT INTO orders (reference, customer_id, status, total_amount, currency, payment_provider, payment_reference, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		INSERT INTO orders (
+			reference, customer_id, status, total_amount, currency,
+			payment_provider, payment_reference, coupon_id, discount_amount,
+			created_at, updated_at
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 		RETURNING id, created_at, updated_at;
 	`
 	err = tx.QueryRowContext(ctx, queryOrder,
@@ -44,6 +48,8 @@ func (r *PostgresOrderRepository) Create(ctx context.Context, o *domain.Order) e
 		o.Currency,
 		o.PaymentProvider,
 		o.PaymentReference,
+		o.CouponID,
+		o.DiscountAmount,
 		now,
 		now,
 	).Scan(&o.ID, &o.CreatedAt, &o.UpdatedAt)
@@ -82,13 +88,20 @@ func (r *PostgresOrderRepository) Create(ctx context.Context, o *domain.Order) e
 func (r *PostgresOrderRepository) FindByID(ctx context.Context, id int64) (*domain.Order, error) {
 	query := `
 		SELECT o.id, o.reference, o.customer_id, o.status, o.total_amount, o.currency,
-		       o.payment_provider, o.payment_reference, o.created_at, o.updated_at,
-		       u.name, u.email
+		       o.payment_provider, o.payment_reference, o.coupon_id, o.discount_amount,
+		       o.created_at, o.updated_at,
+		       u.name, u.email,
+		       c.code, c.discount_type, c.discount_value
 		FROM orders o
 		JOIN users u ON o.customer_id = u.id
+		LEFT JOIN coupons c ON o.coupon_id = c.id
 		WHERE o.id = $1;
 	`
 	o := &domain.Order{Customer: &domain.User{}}
+	var couponID sql.NullInt64
+	var cCode, cType sql.NullString
+	var cVal sql.NullInt64
+
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&o.ID,
 		&o.Reference,
@@ -98,10 +111,15 @@ func (r *PostgresOrderRepository) FindByID(ctx context.Context, id int64) (*doma
 		&o.Currency,
 		&o.PaymentProvider,
 		&o.PaymentReference,
+		&couponID,
+		&o.DiscountAmount,
 		&o.CreatedAt,
 		&o.UpdatedAt,
 		&o.Customer.Name,
 		&o.Customer.Email,
+		&cCode,
+		&cType,
+		&cVal,
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -110,6 +128,19 @@ func (r *PostgresOrderRepository) FindByID(ctx context.Context, id int64) (*doma
 		return nil, fmt.Errorf("failed to query order by id: %w", err)
 	}
 	o.Customer.ID = o.CustomerID
+
+	if couponID.Valid {
+		val := couponID.Int64
+		o.CouponID = &val
+		if cCode.Valid {
+			o.Coupon = &domain.Coupon{
+				ID:            val,
+				Code:          cCode.String,
+				DiscountType:  domain.DiscountType(cType.String),
+				DiscountValue: cVal.Int64,
+			}
+		}
+	}
 
 	items, err := r.findItemsByOrderID(ctx, o.ID)
 	if err != nil {
@@ -124,13 +155,20 @@ func (r *PostgresOrderRepository) FindByID(ctx context.Context, id int64) (*doma
 func (r *PostgresOrderRepository) FindByReference(ctx context.Context, reference string) (*domain.Order, error) {
 	query := `
 		SELECT o.id, o.reference, o.customer_id, o.status, o.total_amount, o.currency,
-		       o.payment_provider, o.payment_reference, o.created_at, o.updated_at,
-		       u.name, u.email
+		       o.payment_provider, o.payment_reference, o.coupon_id, o.discount_amount,
+		       o.created_at, o.updated_at,
+		       u.name, u.email,
+		       c.code, c.discount_type, c.discount_value
 		FROM orders o
 		JOIN users u ON o.customer_id = u.id
+		LEFT JOIN coupons c ON o.coupon_id = c.id
 		WHERE o.reference = $1;
 	`
 	o := &domain.Order{Customer: &domain.User{}}
+	var couponID sql.NullInt64
+	var cCode, cType sql.NullString
+	var cVal sql.NullInt64
+
 	err := r.db.QueryRowContext(ctx, query, reference).Scan(
 		&o.ID,
 		&o.Reference,
@@ -140,10 +178,15 @@ func (r *PostgresOrderRepository) FindByReference(ctx context.Context, reference
 		&o.Currency,
 		&o.PaymentProvider,
 		&o.PaymentReference,
+		&couponID,
+		&o.DiscountAmount,
 		&o.CreatedAt,
 		&o.UpdatedAt,
 		&o.Customer.Name,
 		&o.Customer.Email,
+		&cCode,
+		&cType,
+		&cVal,
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -152,6 +195,19 @@ func (r *PostgresOrderRepository) FindByReference(ctx context.Context, reference
 		return nil, fmt.Errorf("failed to query order by reference: %w", err)
 	}
 	o.Customer.ID = o.CustomerID
+
+	if couponID.Valid {
+		val := couponID.Int64
+		o.CouponID = &val
+		if cCode.Valid {
+			o.Coupon = &domain.Coupon{
+				ID:            val,
+				Code:          cCode.String,
+				DiscountType:  domain.DiscountType(cType.String),
+				DiscountValue: cVal.Int64,
+			}
+		}
+	}
 
 	items, err := r.findItemsByOrderID(ctx, o.ID)
 	if err != nil {
@@ -166,7 +222,8 @@ func (r *PostgresOrderRepository) FindByReference(ctx context.Context, reference
 func (r *PostgresOrderRepository) ListByCustomerID(ctx context.Context, customerID int64) ([]domain.Order, error) {
 	query := `
 		SELECT id, reference, customer_id, status, total_amount, currency,
-		       payment_provider, payment_reference, created_at, updated_at
+		       payment_provider, payment_reference, coupon_id, discount_amount,
+		       created_at, updated_at
 		FROM orders
 		WHERE customer_id = $1
 		ORDER BY created_at DESC;
@@ -180,6 +237,7 @@ func (r *PostgresOrderRepository) ListByCustomerID(ctx context.Context, customer
 	var orders []domain.Order
 	for rows.Next() {
 		var o domain.Order
+		var couponID sql.NullInt64
 		if err := rows.Scan(
 			&o.ID,
 			&o.Reference,
@@ -189,10 +247,16 @@ func (r *PostgresOrderRepository) ListByCustomerID(ctx context.Context, customer
 			&o.Currency,
 			&o.PaymentProvider,
 			&o.PaymentReference,
+			&couponID,
+			&o.DiscountAmount,
 			&o.CreatedAt,
 			&o.UpdatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan customer order: %w", err)
+		}
+		if couponID.Valid {
+			val := couponID.Int64
+			o.CouponID = &val
 		}
 		orders = append(orders, o)
 	}
@@ -218,10 +282,13 @@ func (r *PostgresOrderRepository) ListAll(ctx context.Context, limit, offset int
 
 	query := `
 		SELECT o.id, o.reference, o.customer_id, o.status, o.total_amount, o.currency,
-		       o.payment_provider, o.payment_reference, o.created_at, o.updated_at,
-		       u.name, u.email
+		       o.payment_provider, o.payment_reference, o.coupon_id, o.discount_amount,
+		       o.created_at, o.updated_at,
+		       u.name, u.email,
+		       c.code, c.discount_type, c.discount_value
 		FROM orders o
 		JOIN users u ON o.customer_id = u.id
+		LEFT JOIN coupons c ON o.coupon_id = c.id
 		ORDER BY o.created_at DESC
 		LIMIT $1 OFFSET $2;
 	`
@@ -235,6 +302,10 @@ func (r *PostgresOrderRepository) ListAll(ctx context.Context, limit, offset int
 	for rows.Next() {
 		var o domain.Order
 		o.Customer = &domain.User{}
+		var couponID sql.NullInt64
+		var cCode, cType sql.NullString
+		var cVal sql.NullInt64
+
 		if err := rows.Scan(
 			&o.ID,
 			&o.Reference,
@@ -244,14 +315,31 @@ func (r *PostgresOrderRepository) ListAll(ctx context.Context, limit, offset int
 			&o.Currency,
 			&o.PaymentProvider,
 			&o.PaymentReference,
+			&couponID,
+			&o.DiscountAmount,
 			&o.CreatedAt,
 			&o.UpdatedAt,
 			&o.Customer.Name,
 			&o.Customer.Email,
+			&cCode,
+			&cType,
+			&cVal,
 		); err != nil {
 			return nil, 0, fmt.Errorf("failed to scan order: %w", err)
 		}
 		o.Customer.ID = o.CustomerID
+		if couponID.Valid {
+			val := couponID.Int64
+			o.CouponID = &val
+			if cCode.Valid {
+				o.Coupon = &domain.Coupon{
+					ID:            val,
+					Code:          cCode.String,
+					DiscountType:  domain.DiscountType(cType.String),
+					DiscountValue: cVal.Int64,
+				}
+			}
+		}
 		orders = append(orders, o)
 	}
 

@@ -24,13 +24,15 @@ This document tracks planned architectural, UI/UX, and functional enhancements. 
 
 ---
 
-## 🎯 Next Priorities (High Impact)
-
-- [ ] **Discount & Promotion Engine:**
-  - Support automated discount codes and coupons (fixed amount or percentage).
-  - Add coupon input field in the checkout flow.
+- [x] **Discount & Promotion Engine:**
+  - [x] Automated discount codes and coupons (fixed amount & percentage with cap, usage limit, and validity range).
+  - [x] Admin dashboard coupon management (create, edit, toggle active status, delete).
+  - [x] Reactive storefront checkout coupon application via HTMX (`apply-coupon`, `remove-coupon`, and query params).
+  - [x] Webhook idempotency and state transition guards against duplicate side-effects.
 
 ---
+
+## 🎯 Next Priorities (High Impact)
 
 ## 🚀 Future Feature Enhancements (Backlog)
 

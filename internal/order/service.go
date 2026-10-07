@@ -223,11 +223,18 @@ func (s *Service) UpdateOrderStatus(ctx context.Context, id int64, status domain
 
 // ProcessPaymentResult atomically updates order status and records the payment event.
 func (s *Service) ProcessPaymentResult(ctx context.Context, orderID int64, status domain.OrderStatus, paymentRef string, event *domain.PaymentEvent) error {
+	order, err := s.orderRepo.FindByID(ctx, orderID)
+	if err != nil {
+		return err
+	}
+
+	wasAlreadyPaid := order.Status == domain.StatusPaid
+
 	if err := s.orderRepo.ProcessPaymentResult(ctx, orderID, status, paymentRef, event); err != nil {
 		return err
 	}
 
-	if status == domain.StatusPaid {
+	if status == domain.StatusPaid && !wasAlreadyPaid {
 		s.handleOrderPaid(orderID)
 	}
 

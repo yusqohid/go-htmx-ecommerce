@@ -83,6 +83,18 @@ func (s *Service) CreateCoupon(ctx context.Context, input CreateCouponInput) (*d
 		return nil, fmt.Errorf("%w: percentage discount cannot exceed 100%%", domain.ErrInvalidInput)
 	}
 
+	if input.MinPurchaseAmount < 0 {
+		return nil, fmt.Errorf("%w: minimum purchase amount cannot be negative", domain.ErrInvalidInput)
+	}
+
+	if input.MaxDiscountAmount != nil && *input.MaxDiscountAmount <= 0 {
+		return nil, fmt.Errorf("%w: maximum discount amount must be greater than zero", domain.ErrInvalidInput)
+	}
+
+	if input.UsageLimit != nil && *input.UsageLimit <= 0 {
+		return nil, fmt.Errorf("%w: usage limit must be greater than zero", domain.ErrInvalidInput)
+	}
+
 	if input.StartsAt != nil && input.ExpiresAt != nil && input.ExpiresAt.Before(*input.StartsAt) {
 		return nil, fmt.Errorf("%w: expiration date cannot be before start date", domain.ErrInvalidInput)
 	}
@@ -128,6 +140,18 @@ func (s *Service) UpdateCoupon(ctx context.Context, id int64, input UpdateCoupon
 
 	if input.DiscountType == domain.DiscountTypePercentage && input.DiscountValue > 100 {
 		return nil, fmt.Errorf("%w: percentage discount cannot exceed 100%%", domain.ErrInvalidInput)
+	}
+
+	if input.MinPurchaseAmount < 0 {
+		return nil, fmt.Errorf("%w: minimum purchase amount cannot be negative", domain.ErrInvalidInput)
+	}
+
+	if input.MaxDiscountAmount != nil && *input.MaxDiscountAmount <= 0 {
+		return nil, fmt.Errorf("%w: maximum discount amount must be greater than zero", domain.ErrInvalidInput)
+	}
+
+	if input.UsageLimit != nil && *input.UsageLimit <= 0 {
+		return nil, fmt.Errorf("%w: usage limit must be greater than zero", domain.ErrInvalidInput)
 	}
 
 	if input.StartsAt != nil && input.ExpiresAt != nil && input.ExpiresAt.Before(*input.StartsAt) {

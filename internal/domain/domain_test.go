@@ -119,6 +119,21 @@ func TestCouponDomain(t *testing.T) {
 		t.Errorf("expected 0 discount for inactive coupon, got %d", d)
 	}
 
+	// Defensive check: negative subtotal or negative cap never produces negative discount
+	negativeCap := int64(-5000)
+	negativeCoupon := domain.Coupon{
+		DiscountType:      domain.DiscountTypePercentage,
+		DiscountValue:     20,
+		MaxDiscountAmount: &negativeCap,
+		IsActive:          true,
+	}
+	if d := negativeCoupon.CalculateDiscount(50000); d < 0 {
+		t.Errorf("expected discount not to be negative, got %d", d)
+	}
+	if d := percentCoupon.CalculateDiscount(-1000); d != 0 {
+		t.Errorf("expected 0 discount for negative subtotal, got %d", d)
+	}
+
 	// 3. Validation logic
 	startsInFuture := now.Add(24 * time.Hour)
 	expiredPast := now.Add(-24 * time.Hour)

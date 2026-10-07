@@ -1,7 +1,9 @@
 package coupon
 
 import (
+	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -256,7 +258,11 @@ func (h *Handler) DeleteCoupon(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = h.service.DeleteCoupon(r.Context(), id)
+	if err := h.service.DeleteCoupon(r.Context(), id); err != nil && !errors.Is(err, domain.ErrNotFound) {
+		log.Printf("[CouponHandler] Failed to delete coupon %d: %v", id, err)
+		http.Error(w, fmt.Sprintf("Failed to delete coupon: %v", err), http.StatusInternalServerError)
+		return
+	}
 	http.Redirect(w, r, "/admin/coupons", http.StatusSeeOther)
 }
 

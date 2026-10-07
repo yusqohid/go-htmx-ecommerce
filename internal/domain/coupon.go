@@ -62,7 +62,7 @@ func (c *Coupon) CalculateDiscount(subtotal int64) int64 {
 	switch c.DiscountType {
 	case DiscountTypePercentage:
 		discount = (subtotal * c.DiscountValue) / 100
-		if c.MaxDiscountAmount != nil && discount > *c.MaxDiscountAmount {
+		if c.MaxDiscountAmount != nil && *c.MaxDiscountAmount >= 0 && discount > *c.MaxDiscountAmount {
 			discount = *c.MaxDiscountAmount
 		}
 	case DiscountTypeFixed:
@@ -71,9 +71,12 @@ func (c *Coupon) CalculateDiscount(subtotal int64) int64 {
 		return 0
 	}
 
-	// Discount cannot exceed subtotal
+	// Discount cannot exceed subtotal and cannot be negative
 	if discount > subtotal {
 		discount = subtotal
+	}
+	if discount < 0 {
+		discount = 0
 	}
 	return discount
 }

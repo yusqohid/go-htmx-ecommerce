@@ -301,6 +301,23 @@ func TestCouponService_CRUD(t *testing.T) {
 		t.Errorf("expected ErrInvalidInput for percent > 100, got %v", err)
 	}
 
+	_, err = svc.CreateCoupon(ctx, coupon.CreateCouponInput{Code: "FAIL", DiscountType: domain.DiscountTypeFixed, DiscountValue: 1000, MinPurchaseAmount: -500})
+	if !errors.Is(err, domain.ErrInvalidInput) {
+		t.Errorf("expected ErrInvalidInput for negative min purchase, got %v", err)
+	}
+
+	negCap := int64(-1000)
+	_, err = svc.CreateCoupon(ctx, coupon.CreateCouponInput{Code: "FAIL", DiscountType: domain.DiscountTypePercentage, DiscountValue: 20, MaxDiscountAmount: &negCap})
+	if !errors.Is(err, domain.ErrInvalidInput) {
+		t.Errorf("expected ErrInvalidInput for negative max discount cap, got %v", err)
+	}
+
+	negLimit := -5
+	_, err = svc.CreateCoupon(ctx, coupon.CreateCouponInput{Code: "FAIL", DiscountType: domain.DiscountTypePercentage, DiscountValue: 20, UsageLimit: &negLimit})
+	if !errors.Is(err, domain.ErrInvalidInput) {
+		t.Errorf("expected ErrInvalidInput for negative usage limit, got %v", err)
+	}
+
 	// 2. Get Coupon
 	found, err := svc.GetCoupon(ctx, created.ID)
 	if err != nil || found.Code != "PROMO50" {

@@ -590,3 +590,72 @@ func TestService_OrderPaid_IncrementsCouponUsage(t *testing.T) {
 	}
 }
 
+func TestService_ProcessPaymentResult_NoDoubleCountOnRetry(t *testing.T) {
+	orderRepo := NewMockOrderRepo()
+	productRepo := NewMockProductRepo()
+	couponRepo := NewMockOrderCouponRepo()
+	service := order.NewService(orderRepo, productRepo, couponRepo, &MockPaymentProvider{}, nil)
+	ctx := context.Background()
+
+	couponID := int64(8)
+	_ = couponRepo.Create(ctx, &domain.Coupon{
+		ID:            couponID,
+		Code:          "HEMAT50",
+		DiscountType:  domain.DiscountTypePercentage,
+		DiscountValue: 50,
+		IsActive:      true,
+		UsedCount:     0,
+	})
+
+	ord := &domain.Order{
+		Reference:      "ORD-RETRY-01",
+		CustomerID:     10,
+		Status:         domain.StatusPending,
+		TotalAmount:    50000,
+		DiscountAmount: 50000,
+		CouponID:       &couponID,
+	}
+	_ = orderRepo.Create(ctx, ord)
+
+	event := &domain.PaymentEvent{
+		Provider:       "midtrans",
+		EventID:        "evt-001",
+		EventType:      "capture",
+		OrderReference: ord.Reference,
+		ProcessedAt:    time.Now(),
+	}
+
+	// First webhook call: transitions pending -> paid
+	err := service.ProcessPaymentResult(ctx, ord.ID, domain.StatusPaid, "TX-RETRY-01", event)
+	if err != nil {
+		t.Fatalf("first ProcessPaymentResult failed: %v", err)
+	}
+
+	time.Sleep(50 * time.Millisecond)
+
+	c, _ := couponRepo.FindByID(ctx, couponID)
+	if c.UsedCount != 1 {
+		t.Fatalf("expected coupon used_count to be 1 after first webhook, got %d", c.UsedCount)
+	}
+
+	// Second webhook call (retry): order is already paid
+	retryEvent := &domain.PaymentEvent{
+		Provider:       "midtrans",
+		EventID:        "evt-001-retry",
+		EventType:      "capture",
+		OrderReference: ord.Reference,
+		ProcessedAt:    time.Now(),
+	}
+	err = service.ProcessPaymentResult(ctx, ord.ID, domain.StatusPaid, "TX-RETRY-01", retryEvent)
+	if err != nil {
+		t.Fatalf("second ProcessPaymentResult failed: %v", err)
+	}
+
+	time.Sleep(50 * time.Millisecond)
+
+	cAfterRetry, _ := couponRepo.FindByID(ctx, couponID)
+	if cAfterRetry.UsedCount != 1 {
+		t.Errorf("BUG DETECTED: webhook retry incremented coupon used_count! expected 1, got %d", cAfterRetry.UsedCount)
+	}
+}
+
